@@ -16,9 +16,9 @@ public class AS {
 
 	private Queue<BGPUpdate> incUpdateQueue;
 
-	public static final int PROVIDER = -1;
-	public static final int PEER = 0;
-	public static final int CUSTOMER = 1;
+	public static final int PROIVDER_CODE = -1;
+	public static final int PEER_CODE = 0;
+	public static final int CUSTOMER_CODE = 1;
 
 	public AS(int myASN) {
 		this.asn = myASN;
@@ -35,24 +35,39 @@ public class AS {
 	}
 
 	public void addRelation(AS otherAS, int myRelationToThem) {
-		if (myRelationToThem == AS.PROVIDER) {
+		if (myRelationToThem == AS.PROIVDER_CODE) {
 			this.customers.add(otherAS);
 			otherAS.providers.add(this);
-		} else if (myRelationToThem == AS.PEER) {
+		} else if (myRelationToThem == AS.PEER_CODE) {
 			this.peers.add(otherAS);
 			otherAS.peers.add(this);
-		} else if (myRelationToThem == AS.CUSTOMER) {
+		} else if (myRelationToThem == AS.CUSTOMER_CODE) {
 			this.providers.add(otherAS);
 			otherAS.customers.add(this);
 		} else if (myRelationToThem == 3) {
-			//ignore
+			// ignore
 		} else {
 			System.err.println("WTF bad relation: " + myRelationToThem);
 			System.exit(-1);
 		}
 	}
 
-	//FIXME needs to pull from queue
+	/**
+	 * Remove all references to this as object from other AS objects
+	 */
+	public void purgeRelations() {
+		for (AS tCust : this.customers) {
+			tCust.providers.remove(this);
+		}
+		for (AS tProv : this.providers) {
+			tProv.customers.remove(this);
+		}
+		for (AS tPeer : this.peers) {
+			tPeer.peers.remove(this);
+		}
+	}
+
+	// FIXME needs to pull from queue
 	public void handleAdvertisement() {
 		BGPUpdate nextUpdate = this.incUpdateQueue.poll();
 		if (nextUpdate == null) {
@@ -113,7 +128,8 @@ public class AS {
 		/*
 		 * If it is a loop don't add it to ribs
 		 */
-		if ((!nextUpdate.isWithdrawl()) && (!nextUpdate.getPath().containsLoop(this.asn))) {
+		if ((!nextUpdate.isWithdrawl())
+				&& (!nextUpdate.getPath().containsLoop(this.asn))) {
 			advRibList.add(nextUpdate.getPath());
 			destRibList.add(nextUpdate.getPath());
 		}
@@ -128,8 +144,8 @@ public class AS {
 	public void withdrawPath(AS peer, int dest) {
 		this.incUpdateQueue.add(new BGPUpdate(dest, peer));
 	}
-	
-	public boolean hasWorkToDo(){
+
+	public boolean hasWorkToDo() {
 		return !this.incUpdateQueue.isEmpty();
 	}
 
@@ -156,7 +172,8 @@ public class AS {
 
 			if (newRel == currentRel) {
 				if (currentBest.getPathLength() > tPath.getPathLength()
-						|| (currentBest.getPathLength() == tPath.getPathLength() && tPath.getNextHop() < currentBest
+						|| (currentBest.getPathLength() == tPath
+								.getPathLength() && tPath.getNextHop() < currentBest
 								.getNextHop())) {
 					currentBest = tPath;
 					currentRel = newRel;
@@ -165,7 +182,8 @@ public class AS {
 		}
 
 		BGPPath currentInstall = this.locRib.get(dest);
-		changed = (currentInstall == null || !currentBest.equals(currentInstall));
+		changed = (currentInstall == null || !currentBest
+				.equals(currentInstall));
 		this.locRib.put(dest, currentBest);
 
 		/*
@@ -183,7 +201,8 @@ public class AS {
 					tCust.advPath(pathToAdv);
 					newAdvTo.add(tCust);
 				}
-				if (pathOfMerit.getDest() == this.asn || this.getRel(pathOfMerit.getNextHop()) == 1) {
+				if (pathOfMerit.getDest() == this.asn
+						|| this.getRel(pathOfMerit.getNextHop()) == 1) {
 					for (AS tPeer : this.peers) {
 						tPeer.advPath(pathToAdv);
 						newAdvTo.add(tPeer);
@@ -212,8 +231,8 @@ public class AS {
 		} else if (this.customers.contains(asn)) {
 			return 1;
 		}
-		
-		if(asn == this.asn){
+
+		if (asn == this.asn) {
 			return 2;
 		}
 
@@ -238,6 +257,11 @@ public class AS {
 
 	public int getASN() {
 		return this.asn;
+	}
+
+	public int getDegree() {
+		return this.customers.size() + this.peers.size()
+				+ this.providers.size();
 	}
 
 }

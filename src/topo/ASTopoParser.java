@@ -6,8 +6,15 @@ import java.io.*;
 public class ASTopoParser {
 
 	public static void main(String args[]) throws IOException {
+		
+		/*
+		 * Read the relationship file and then purge all stub ASes
+		 */
 		HashMap<Integer, AS> asMap = ASTopoParser.parseFile("as-rel.txt");
-
+		System.out.println("Raw topo size is: " + asMap.size());
+		ASTopoParser.pruneStubASNs(asMap);
+		System.out.println("Topo size after stub purge: " + asMap.size());
+		
 		/*
 		 * Give everyone their self network
 		 */
@@ -37,8 +44,8 @@ public class ASTopoParser {
 			}
 
 			stepCounter++;
-			if (stepCounter % 10000 == 0) {
-				System.out.println("" + (stepCounter % 10000) + " (10k msgs)");
+			if (stepCounter % 1000 == 0) {
+				System.out.println("" + (stepCounter % 1000) + " (1k msgs)");
 			}
 		}
 
@@ -47,7 +54,8 @@ public class ASTopoParser {
 			;
 	}
 
-	public static HashMap<Integer, AS> parseFile(String asRelFile) throws IOException {
+	public static HashMap<Integer, AS> parseFile(String asRelFile)
+			throws IOException {
 
 		HashMap<Integer, AS> retMap = new HashMap<Integer, AS>();
 
@@ -110,5 +118,28 @@ public class ASTopoParser {
 				}
 			}
 		}
+	}
+
+	public static void pruneStubASNs(HashMap<Integer, AS> asMap) {
+		Set<AS> stubSet = new HashSet<AS>();
+
+		/*
+		 * Find the stubs (and any non-connected AS)!
+		 */
+		for (AS tAS : asMap.values()) {
+			if (tAS.getDegree() <= 1) {
+				stubSet.add(tAS);
+			}
+		}
+
+		/*
+		 * Remove these guys from the asn map and remove them from their peer's
+		 * data structure
+		 */
+		for (AS tAS : stubSet) {
+			asMap.remove(tAS.getASN());
+			tAS.purgeRelations();
+		}
+
 	}
 }
