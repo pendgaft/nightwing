@@ -6,56 +6,12 @@ import java.io.*;
 public class ASTopoParser {
 
 	public static void main(String args[]) throws IOException {
-		
 		/*
-		 * Read the relationship file and then purge all stub ASes
+		 * This is no more, moved to BGPMaster at this point
 		 */
-		HashMap<Integer, AS> asMap = ASTopoParser.parseFile("as-rel.txt");
-		System.out.println("Raw topo size is: " + asMap.size());
-		ASTopoParser.pruneStubASNs(asMap);
-		System.out.println("Topo size after stub purge: " + asMap.size());
-		
-		/*
-		 * Give everyone their self network
-		 */
-		for (AS tAS : asMap.values()) {
-			tAS.advPath(new BGPPath(tAS.getASN()));
-		}
-
-		int stepCounter = 0;
-		boolean stuffToDo = true;
-		while (stuffToDo) {
-			stuffToDo = false;
-
-			/*
-			 * let everyone do one msg
-			 */
-			for (AS tAS : asMap.values()) {
-				tAS.handleAdvertisement();
-			}
-
-			/*
-			 * check if nodes still have stuff to do
-			 */
-			for (AS tAS : asMap.values()) {
-				if (tAS.hasWorkToDo()) {
-					stuffToDo = true;
-				}
-			}
-
-			stepCounter++;
-			if (stepCounter % 1000 == 0) {
-				System.out.println("" + (stepCounter % 1000) + " (1k msgs)");
-			}
-		}
-
-		System.out.println("all done here, holding to measure mem");
-		while (true)
-			;
 	}
 
-	public static HashMap<Integer, AS> parseFile(String asRelFile)
-			throws IOException {
+	public static HashMap<Integer, AS> parseFile(String asRelFile) throws IOException {
 
 		HashMap<Integer, AS> retMap = new HashMap<Integer, AS>();
 
@@ -120,6 +76,11 @@ public class ASTopoParser {
 		}
 	}
 
+	/*
+	 * FIXME this needs to, at some point in the future, take into account these
+	 * asns, we can ignore them for the purposes of BGP, but we should note
+	 * their existance
+	 */
 	public static void pruneStubASNs(HashMap<Integer, AS> asMap) {
 		Set<AS> stubSet = new HashSet<AS>();
 

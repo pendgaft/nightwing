@@ -1,6 +1,7 @@
 package topo;
 
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class AS {
 
@@ -31,7 +32,7 @@ public class AS {
 		this.adjOutRib = new HashMap<Integer, Set<AS>>();
 		this.locRib = new HashMap<Integer, BGPPath>();
 
-		this.incUpdateQueue = new LinkedList<BGPUpdate>();
+		this.incUpdateQueue = new LinkedBlockingQueue<BGPUpdate>();
 	}
 
 	public void addRelation(AS otherAS, int myRelationToThem) {
