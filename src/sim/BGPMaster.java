@@ -136,6 +136,7 @@ public class BGPMaster {
 	public BGPMaster(int blockCount) {
 		this.blockCount = blockCount;
 		this.workSem = new Semaphore(0);
+		this.completeSem = new Semaphore(0);
 		this.workQueue = new LinkedBlockingQueue<Set<AS>>();
 	}
 
