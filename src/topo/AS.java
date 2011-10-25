@@ -14,6 +14,7 @@ public class AS {
 	private HashMap<Integer, List<BGPPath>> inRib;
 	private HashMap<Integer, Set<AS>> adjOutRib;
 	private HashMap<Integer, BGPPath> locRib;
+	private HashSet<Integer> dirtyDest;
 
 	private Queue<BGPUpdate> incUpdateQueue;
 
@@ -33,6 +34,7 @@ public class AS {
 		this.locRib = new HashMap<Integer, BGPPath>();
 
 		this.incUpdateQueue = new LinkedBlockingQueue<BGPUpdate>();
+		this.dirtyDest = new HashSet<Integer>();
 	}
 
 	public void addRelation(AS otherAS, int myRelationToThem) {
@@ -129,13 +131,19 @@ public class AS {
 		/*
 		 * If it is a loop don't add it to ribs
 		 */
-		if ((!nextUpdate.isWithdrawl())
-				&& (!nextUpdate.getPath().containsLoop(this.asn))) {
+		if ((!nextUpdate.isWithdrawl()) && (!nextUpdate.getPath().containsLoop(this.asn))) {
 			advRibList.add(nextUpdate.getPath());
 			destRibList.add(nextUpdate.getPath());
 		}
 
 		recalcBestPath(dest);
+	}
+	
+	public void mraiExpire(){
+		for(int tDest: this.dirtyDest){
+			this.sendUpdate(tDest);
+		}
+		this.dirtyDest.clear();
 	}
 
 	public void advPath(BGPPath incPath) {
@@ -149,12 +157,24 @@ public class AS {
 	public boolean hasWorkToDo() {
 		return !this.incUpdateQueue.isEmpty();
 	}
+	
+	public boolean hasDirtyPrefixes(){
+		return !this.dirtyDest.isEmpty();
+	}
+
+	public long getPendingMessageCount() {
+		return (long) this.incUpdateQueue.size();
+	}
 
 	private void recalcBestPath(int dest) {
 		boolean changed;
 
 		List<BGPPath> possList = this.inRib.get(dest);
 
+		/*
+		 * Actual path selection, abreviated: relationship => path len => tie
+		 * breaker
+		 */
 		BGPPath currentBest = null;
 		int currentRel = -4;
 		for (BGPPath tPath : possList) {
@@ -173,8 +193,7 @@ public class AS {
 
 			if (newRel == currentRel) {
 				if (currentBest.getPathLength() > tPath.getPathLength()
-						|| (currentBest.getPathLength() == tPath
-								.getPathLength() && tPath.getNextHop() < currentBest
+						|| (currentBest.getPathLength() == tPath.getPathLength() && tPath.getNextHop() < currentBest
 								.getNextHop())) {
 					currentBest = tPath;
 					currentRel = newRel;
@@ -183,43 +202,45 @@ public class AS {
 		}
 
 		BGPPath currentInstall = this.locRib.get(dest);
-		changed = (currentInstall == null || !currentBest
-				.equals(currentInstall));
+		changed = (currentInstall == null || !currentBest.equals(currentInstall));
 		this.locRib.put(dest, currentBest);
 
 		/*
-		 * If we have a new path send updates
+		 * If we have a new path, mark that we have a dirty destination
 		 */
 		if (changed) {
-			Set<AS> prevAdvedTo = this.adjOutRib.get(dest);
-			Set<AS> newAdvTo = new HashSet<AS>();
-			BGPPath pathOfMerit = this.locRib.get(dest);
+			this.dirtyDest.add(dest);
+		}
+	}
 
-			if (pathOfMerit != null) {
-				BGPPath pathToAdv = pathOfMerit.deepCopy();
-				pathToAdv.appendASToPath(this.asn);
-				for (AS tCust : this.customers) {
-					tCust.advPath(pathToAdv);
-					newAdvTo.add(tCust);
+	private void sendUpdate(int dest) {
+		Set<AS> prevAdvedTo = this.adjOutRib.get(dest);
+		Set<AS> newAdvTo = new HashSet<AS>();
+		BGPPath pathOfMerit = this.locRib.get(dest);
+
+		if (pathOfMerit != null) {
+			BGPPath pathToAdv = pathOfMerit.deepCopy();
+			pathToAdv.appendASToPath(this.asn);
+			for (AS tCust : this.customers) {
+				tCust.advPath(pathToAdv);
+				newAdvTo.add(tCust);
+			}
+			if (pathOfMerit.getDest() == this.asn || this.getRel(pathOfMerit.getNextHop()) == 1) {
+				for (AS tPeer : this.peers) {
+					tPeer.advPath(pathToAdv);
+					newAdvTo.add(tPeer);
 				}
-				if (pathOfMerit.getDest() == this.asn
-						|| this.getRel(pathOfMerit.getNextHop()) == 1) {
-					for (AS tPeer : this.peers) {
-						tPeer.advPath(pathToAdv);
-						newAdvTo.add(tPeer);
-					}
-					for (AS tProv : this.providers) {
-						tProv.advPath(pathToAdv);
-						newAdvTo.add(tProv);
-					}
+				for (AS tProv : this.providers) {
+					tProv.advPath(pathToAdv);
+					newAdvTo.add(tProv);
 				}
 			}
+		}
 
-			if (prevAdvedTo != null) {
-				prevAdvedTo.removeAll(newAdvTo);
-				for (AS tAS : prevAdvedTo) {
-					tAS.withdrawPath(this, dest);
-				}
+		if (prevAdvedTo != null) {
+			prevAdvedTo.removeAll(newAdvTo);
+			for (AS tAS : prevAdvedTo) {
+				tAS.withdrawPath(this, dest);
 			}
 		}
 	}
@@ -261,8 +282,11 @@ public class AS {
 	}
 
 	public int getDegree() {
-		return this.customers.size() + this.peers.size()
-				+ this.providers.size();
+		return this.customers.size() + this.peers.size() + this.providers.size();
+	}
+
+	public int getCustomerCount() {
+		return this.customers.size();
 	}
 
 }

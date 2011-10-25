@@ -11,7 +11,31 @@ public class ASTopoParser {
 		 */
 	}
 
-	public static HashMap<Integer, AS> parseFile(String asRelFile) throws IOException {
+	public static HashMap<Integer, AS> doNetworkBuild() throws IOException {
+		HashMap<Integer, AS> asMap = ASTopoParser.parseFile("as-rel.txt");
+		System.out.println("Raw topo size is: " + asMap.size());
+
+		/*
+		 * Base is 32k, stub prune => 23k, second stub prune => 22k
+		 */
+		//		ASTopoParser.pruneStubASNs(asMap);
+		//		System.out.println("Topo size after stub purge: " + asMap.size());
+		//		ASTopoParser.pruneStubASNs(asMap);
+		//		System.out.println("Topo size after second stub purge: " + asMap.size());
+
+		/*
+		 * LCI strat: no customer prune, no customer prune, we're trying a
+		 * single prune
+		 */
+		ASTopoParser.pruneNoCustomerAS(asMap);
+		System.out.println("Topo size after stub purge: " + asMap.size());
+		//ASTopoParser.pruneNoCustomerAS(asMap);
+		//System.out.println("Topo size after second stub purge: " + asMap.size());
+
+		return asMap;
+	}
+
+	private static HashMap<Integer, AS> parseFile(String asRelFile) throws IOException {
 
 		HashMap<Integer, AS> retMap = new HashMap<Integer, AS>();
 
@@ -81,7 +105,7 @@ public class ASTopoParser {
 	 * asns, we can ignore them for the purposes of BGP, but we should note
 	 * their existance
 	 */
-	public static void pruneStubASNs(HashMap<Integer, AS> asMap) {
+	private static void pruneStubASNs(HashMap<Integer, AS> asMap) {
 		Set<AS> stubSet = new HashSet<AS>();
 
 		/*
@@ -101,6 +125,27 @@ public class ASTopoParser {
 			asMap.remove(tAS.getASN());
 			tAS.purgeRelations();
 		}
+	}
 
+	private static void pruneNoCustomerAS(HashMap<Integer, AS> asMap) {
+		Set<AS> purgeSet = new HashSet<AS>();
+
+		/*
+		 * Find the ASes w/o customers
+		 */
+		for (AS tAS : asMap.values()) {
+			if (tAS.getCustomerCount() == 0) {
+				purgeSet.add(tAS);
+			}
+		}
+
+		/*
+		 * Remove these guys from the asn map and remove them from their peer's
+		 * data structure
+		 */
+		for (AS tAS : purgeSet) {
+			asMap.remove(tAS.getASN());
+			tAS.purgeRelations();
+		}
 	}
 }
