@@ -12,7 +12,7 @@ public class ASTopoParser {
 	}
 
 	public static HashMap<Integer, AS> doNetworkBuild() throws IOException {
-		HashMap<Integer, AS> asMap = ASTopoParser.parseFile("as-rel.txt");
+		HashMap<Integer, AS> asMap = ASTopoParser.parseFile("as-rel.txt", "china-as.txt");
 		System.out.println("Raw topo size is: " + asMap.size());
 
 		/*
@@ -35,7 +35,7 @@ public class ASTopoParser {
 		return asMap;
 	}
 
-	private static HashMap<Integer, AS> parseFile(String asRelFile) throws IOException {
+	private static HashMap<Integer, AS> parseFile(String asRelFile, String chinaFile) throws IOException {
 
 		HashMap<Integer, AS> retMap = new HashMap<Integer, AS>();
 
@@ -77,6 +77,16 @@ public class ASTopoParser {
 		}
 		fBuff.close();
 
+		/*
+		 * read the china as file, toggle all chinese ASes
+		 */
+		fBuff = new BufferedReader(new FileReader(chinaFile));
+		while (fBuff.ready()) {
+			int asn = Integer.parseInt(fBuff.readLine());
+			retMap.get(asn).toggleChinaAS();
+		}
+		fBuff.close();
+
 		return retMap;
 	}
 
@@ -100,11 +110,7 @@ public class ASTopoParser {
 		}
 	}
 
-	/*
-	 * FIXME this needs to, at some point in the future, take into account these
-	 * asns, we can ignore them for the purposes of BGP, but we should note
-	 * their existance
-	 */
+	@Deprecated
 	private static void pruneStubASNs(HashMap<Integer, AS> asMap) {
 		Set<AS> stubSet = new HashSet<AS>();
 
@@ -127,6 +133,11 @@ public class ASTopoParser {
 		}
 	}
 
+	/*
+	 * FIXME this needs to, at some point in the future, take into account these
+	 * asns, we can ignore them for the purposes of BGP, but we should note
+	 * their existance
+	 */
 	private static void pruneNoCustomerAS(HashMap<Integer, AS> asMap) {
 		Set<AS> purgeSet = new HashSet<AS>();
 
@@ -134,6 +145,13 @@ public class ASTopoParser {
 		 * Find the ASes w/o customers
 		 */
 		for (AS tAS : asMap.values()) {
+			/*
+			 * leave the all chinese ASes connected to our topo
+			 */
+			if (tAS.isChinaAS() || tAS.connectedToChinaAS()) {
+				continue;
+			}
+
 			if (tAS.getCustomerCount() == 0) {
 				purgeSet.add(tAS);
 			}

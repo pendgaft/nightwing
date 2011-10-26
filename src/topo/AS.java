@@ -6,6 +6,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class AS {
 
 	private int asn;
+	private boolean chinaAS;
 	private Set<AS> customers;
 	private Set<AS> peers;
 	private Set<AS> providers;
@@ -24,6 +25,7 @@ public class AS {
 
 	public AS(int myASN) {
 		this.asn = myASN;
+		this.chinaAS = false;
 		this.customers = new HashSet<AS>();
 		this.peers = new HashSet<AS>();
 		this.providers = new HashSet<AS>();
@@ -287,6 +289,33 @@ public class AS {
 
 	public int getCustomerCount() {
 		return this.customers.size();
+	}
+	
+	public void toggleChinaAS(){
+		this.chinaAS = true;
+	}
+	
+	public boolean isChinaAS(){
+		return this.chinaAS;
+	}
+	
+	public boolean connectedToChinaAS(){
+		for(AS tAS: this.customers){
+			if(tAS.isChinaAS()){
+				return true;
+			}
+		}
+		for(AS tAS: this.providers){
+			if(tAS.isChinaAS()){
+				return true;
+			}
+		}
+		for(AS tAS: this.peers){
+			if(tAS.isChinaAS()){
+				return true;
+			}
+		}
+		return false;
 	}
 
 }
