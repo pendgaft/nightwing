@@ -27,12 +27,14 @@ public class ASTopoParser {
 		 * LCI strat: no customer prune, no customer prune, we're trying a
 		 * single prune
 		 */
-		ASTopoParser.pruneNoCustomerAS(asMap);
-		System.out.println("Topo size after stub purge: " + asMap.size());
 		//ASTopoParser.pruneNoCustomerAS(asMap);
 		//System.out.println("Topo size after second stub purge: " + asMap.size());
 
 		return asMap;
+	}
+	
+	public static HashMap<Integer, AS> doNetworkPrune(HashMap<Integer, AS> workingMap){
+		return ASTopoParser.pruneNoCustomerAS(workingMap);
 	}
 
 	private static HashMap<Integer, AS> parseFile(String asRelFile, String chinaFile) throws IOException {
@@ -82,8 +84,11 @@ public class ASTopoParser {
 		 */
 		fBuff = new BufferedReader(new FileReader(chinaFile));
 		while (fBuff.ready()) {
-			int asn = Integer.parseInt(fBuff.readLine());
-			retMap.get(asn).toggleChinaAS();
+			pollString = fBuff.readLine().trim();
+			if (pollString.length() > 0) {
+				int asn = Integer.parseInt(fBuff.readLine());
+				retMap.get(asn).toggleChinaAS();
+			}
 		}
 		fBuff.close();
 
@@ -138,9 +143,9 @@ public class ASTopoParser {
 	 * asns, we can ignore them for the purposes of BGP, but we should note
 	 * their existance
 	 */
-	private static void pruneNoCustomerAS(HashMap<Integer, AS> asMap) {
-		Set<AS> purgeSet = new HashSet<AS>();
-
+	private static HashMap<Integer, AS> pruneNoCustomerAS(HashMap<Integer, AS> asMap) {
+		HashMap<Integer, AS> purgeMap = new HashMap();
+		
 		/*
 		 * Find the ASes w/o customers
 		 */
@@ -153,7 +158,7 @@ public class ASTopoParser {
 			}
 
 			if (tAS.getCustomerCount() == 0) {
-				purgeSet.add(tAS);
+				purgeMap.put(tAS.getASN(), tAS);
 			}
 		}
 
@@ -161,9 +166,11 @@ public class ASTopoParser {
 		 * Remove these guys from the asn map and remove them from their peer's
 		 * data structure
 		 */
-		for (AS tAS : purgeSet) {
+		for (AS tAS : purgeMap.values()) {
 			asMap.remove(tAS.getASN());
 			tAS.purgeRelations();
 		}
+		
+		return purgeMap;
 	}
 }

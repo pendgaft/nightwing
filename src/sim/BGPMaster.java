@@ -18,17 +18,19 @@ public class BGPMaster {
 	private static final int NUM_THREADS = 8;
 	private static final int WORK_BLOCK_SIZE = 40;
 
-	public static void main(String argv[]) throws IOException {
+	@SuppressWarnings("unchecked")
+	public static HashMap<Integer, AS>[] buildBGPConnection() throws IOException {
 
 		/*
 		 * Build AS map
 		 */
-		HashMap<Integer, AS> asMap = ASTopoParser.doNetworkBuild();
+		HashMap<Integer, AS> usefulASMap = ASTopoParser.doNetworkBuild();
+		HashMap<Integer, AS> prunedASMap = ASTopoParser.doNetworkPrune(usefulASMap);
 
 		/*
 		 * Give everyone their self network
 		 */
-		for (AS tAS : asMap.values()) {
+		for (AS tAS : usefulASMap.values()) {
 			tAS.advPath(new BGPPath(tAS.getASN()));
 		}
 
@@ -38,7 +40,7 @@ public class BGPMaster {
 		List<Set<AS>> asBlocks = new LinkedList<Set<AS>>();
 		int currentBlockSize = 0;
 		Set<AS> currentSet = new HashSet<AS>();
-		for (AS tAS : asMap.values()) {
+		for (AS tAS : usefulASMap.values()) {
 			currentSet.add(tAS);
 			currentBlockSize++;
 
@@ -96,7 +98,7 @@ public class BGPMaster {
 			/*
 			 * check if nodes still have stuff to do
 			 */
-			for (AS tAS : asMap.values()) {
+			for (AS tAS : usefulASMap.values()) {
 				if (tAS.hasWorkToDo()) {
 					stuffToDo = true;
 				}
@@ -111,7 +113,7 @@ public class BGPMaster {
 			 * point
 			 */
 			if (!stuffToDo && skipToMRAI) {
-				for(AS tAS: asMap.values()){
+				for(AS tAS: usefulASMap.values()){
 					tAS.mraiExpire();
 				}
 				skipToMRAI = false;
@@ -129,8 +131,10 @@ public class BGPMaster {
 
 		//self.tellDone();
 		System.out.println("all done here, holding to measure mem");
-		while (true)
-			;
+		HashMap<Integer, AS>[] retArray = new HashMap[2];
+		retArray[0] = usefulASMap;
+		retArray[1] = prunedASMap;
+		return retArray;
 	}
 
 	public BGPMaster(int blockCount) {
