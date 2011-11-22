@@ -16,6 +16,10 @@ public class BGPPath {
 		return this.path.size();
 	}
 	
+	public List<Integer> getPath(){
+		return this.path;
+	}
+	
 	public void appendASToPath(int frontASN){
 		this.path.addFirst(frontASN);
 	}
@@ -64,5 +68,17 @@ public class BGPPath {
 			newPath.path.addLast(tASN);
 		}
 		return newPath;
+	}
+	
+	public String toString(){
+		String base = "dst: " + this.destASN + " path:";
+		for(int tAS: this.path){
+			base = base + " " + tAS;
+		}
+		return base;
+	}
+	
+	public int hashCode(){
+		return this.toString().hashCode();
 	}
 }

@@ -3,6 +3,8 @@ package topo;
 import java.util.*;
 import java.io.*;
 
+import decoy.DecoyAS;
+
 public class ASTopoParser {
 
 	public static void main(String args[]) throws IOException {
@@ -11,8 +13,8 @@ public class ASTopoParser {
 		 */
 	}
 
-	public static HashMap<Integer, AS> doNetworkBuild() throws IOException {
-		HashMap<Integer, AS> asMap = ASTopoParser.parseFile("as-rel.txt", "china-as.txt");
+	public static HashMap<Integer, DecoyAS> doNetworkBuild() throws IOException {
+		HashMap<Integer, DecoyAS> asMap = ASTopoParser.parseFile("as-rel.txt", "china-as.txt");
 		System.out.println("Raw topo size is: " + asMap.size());
 
 		/*
@@ -33,13 +35,13 @@ public class ASTopoParser {
 		return asMap;
 	}
 	
-	public static HashMap<Integer, AS> doNetworkPrune(HashMap<Integer, AS> workingMap){
+	public static HashMap<Integer, DecoyAS> doNetworkPrune(HashMap<Integer, DecoyAS> workingMap){
 		return ASTopoParser.pruneNoCustomerAS(workingMap);
 	}
 
-	private static HashMap<Integer, AS> parseFile(String asRelFile, String chinaFile) throws IOException {
+	private static HashMap<Integer, DecoyAS> parseFile(String asRelFile, String chinaFile) throws IOException {
 
-		HashMap<Integer, AS> retMap = new HashMap<Integer, AS>();
+		HashMap<Integer, DecoyAS> retMap = new HashMap<Integer, DecoyAS>();
 
 		String pollString;
 		StringTokenizer pollToks;
@@ -69,10 +71,10 @@ public class ASTopoParser {
 			rel = Integer.parseInt(pollToks.nextToken());
 
 			if (!retMap.containsKey(lhsASN)) {
-				retMap.put(lhsASN, new AS(lhsASN));
+				retMap.put(lhsASN, new DecoyAS(lhsASN));
 			}
 			if (!retMap.containsKey(rhsASN)) {
-				retMap.put(rhsASN, new AS(rhsASN));
+				retMap.put(rhsASN, new DecoyAS(rhsASN));
 			}
 
 			retMap.get(lhsASN).addRelation(retMap.get(rhsASN), rel);
@@ -115,41 +117,36 @@ public class ASTopoParser {
 		}
 	}
 
-	@Deprecated
-	private static void pruneStubASNs(HashMap<Integer, AS> asMap) {
-		Set<AS> stubSet = new HashSet<AS>();
+//	@Deprecated
+//	private static void pruneStubASNs(HashMap<Integer, AS> asMap) {
+//		Set<AS> stubSet = new HashSet<AS>();
+//
+//		/*
+//		 * Find the stubs (and any non-connected AS)!
+//		 */
+//		for (AS tAS : asMap.values()) {
+//			if (tAS.getDegree() <= 1) {
+//				stubSet.add(tAS);
+//			}
+//		}
+//
+//		/*
+//		 * Remove these guys from the asn map and remove them from their peer's
+//		 * data structure
+//		 */
+//		for (AS tAS : stubSet) {
+//			asMap.remove(tAS.getASN());
+//			tAS.purgeRelations();
+//		}
+//	}
 
-		/*
-		 * Find the stubs (and any non-connected AS)!
-		 */
-		for (AS tAS : asMap.values()) {
-			if (tAS.getDegree() <= 1) {
-				stubSet.add(tAS);
-			}
-		}
-
-		/*
-		 * Remove these guys from the asn map and remove them from their peer's
-		 * data structure
-		 */
-		for (AS tAS : stubSet) {
-			asMap.remove(tAS.getASN());
-			tAS.purgeRelations();
-		}
-	}
-
-	/*
-	 * FIXME this needs to, at some point in the future, take into account these
-	 * asns, we can ignore them for the purposes of BGP, but we should note
-	 * their existance
-	 */
-	private static HashMap<Integer, AS> pruneNoCustomerAS(HashMap<Integer, AS> asMap) {
-		HashMap<Integer, AS> purgeMap = new HashMap();
+	private static HashMap<Integer, DecoyAS> pruneNoCustomerAS(HashMap<Integer, DecoyAS> asMap) {
+		HashMap<Integer, DecoyAS> purgeMap = new HashMap<Integer, DecoyAS>();
 		
 		/*
 		 * Find the ASes w/o customers
 		 */
-		for (AS tAS : asMap.values()) {
+		for (DecoyAS tAS : asMap.values()) {
 			/*
 			 * leave the all chinese ASes connected to our topo
 			 */

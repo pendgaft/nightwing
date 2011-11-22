@@ -1,0 +1,53 @@
+package sim;
+
+import java.util.*;
+import java.io.*;
+
+import decoy.DecoyAS;
+
+public class Nightwing {
+
+	private static final String FIND_STRING = "find";
+	private static final int FIND_MODE = 1;
+	private static final String REPEAT_STRING = "repeat";
+	private static final int REPEAT_MODE = 2;
+
+	public static void main(String[] args) throws IOException {
+
+		/*
+		 * Figure out mode that we're running
+		 */
+		int mode = 0;
+		if (args[0].equalsIgnoreCase(Nightwing.FIND_STRING)) {
+			mode = Nightwing.FIND_MODE;
+		} else if (args[0].equalsIgnoreCase(Nightwing.REPEAT_STRING)) {
+			mode = Nightwing.REPEAT_MODE;
+		} else {
+			System.out.println("bad mode: " + args[0]);
+			System.exit(-1);
+		}
+		System.out.println("Mode: " + args[0] + " looks good, building topo.");
+
+		/*
+		 * Build the topology, and store in Maps
+		 */
+		HashMap<Integer, DecoyAS>[] topoArray = BGPMaster.buildBGPConnection();
+		HashMap<Integer, DecoyAS> liveTopo = topoArray[0];
+		HashMap<Integer, DecoyAS> prunedTopo = topoArray[1];
+		System.out.println("Topo built and BGP converged.");
+
+		/*
+		 * Run the correct mode
+		 */
+		if (mode == Nightwing.FIND_MODE) {
+
+		} else if (mode == Nightwing.REPEAT_MODE) {
+
+		} else {
+			System.out.println("mode fucked up, wtf.... " + mode);
+			System.exit(-2);
+		}
+
+	}
+
+}

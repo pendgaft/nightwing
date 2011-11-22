@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
+import decoy.DecoyAS;
 import topo.AS;
 import topo.ASTopoParser;
 import topo.BGPPath;
@@ -19,13 +20,13 @@ public class BGPMaster {
 	private static final int WORK_BLOCK_SIZE = 40;
 
 	@SuppressWarnings("unchecked")
-	public static HashMap<Integer, AS>[] buildBGPConnection() throws IOException {
+	public static HashMap<Integer, DecoyAS>[] buildBGPConnection() throws IOException {
 
 		/*
 		 * Build AS map
 		 */
-		HashMap<Integer, AS> usefulASMap = ASTopoParser.doNetworkBuild();
-		HashMap<Integer, AS> prunedASMap = ASTopoParser.doNetworkPrune(usefulASMap);
+		HashMap<Integer, DecoyAS> usefulASMap = ASTopoParser.doNetworkBuild();
+		HashMap<Integer, DecoyAS> prunedASMap = ASTopoParser.doNetworkPrune(usefulASMap);
 
 		/*
 		 * Give everyone their self network
@@ -131,7 +132,7 @@ public class BGPMaster {
 
 		//self.tellDone();
 		System.out.println("all done here, holding to measure mem");
-		HashMap<Integer, AS>[] retArray = new HashMap[2];
+		HashMap<Integer, DecoyAS>[] retArray = new HashMap[2];
 		retArray[0] = usefulASMap;
 		retArray[1] = prunedASMap;
 		return retArray;
@@ -165,8 +166,8 @@ public class BGPMaster {
 		}
 	}
 
-	private void tellDone() {
-		this.workSem.notifyAll();
-	}
+//	private void tellDone() {
+//		this.workSem.notifyAll();
+//	}
 
 }

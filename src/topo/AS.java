@@ -3,6 +3,15 @@ package topo;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
+/*
+ * Notes to turn into docs
+ * 
+ * This deals with BGP side
+ * and in the future the IP
+ * 
+ * The decoy side in handled by decoryAS, which
+ * should nest this class
+ */
 public class AS {
 
 	private int asn;
@@ -72,7 +81,6 @@ public class AS {
 		}
 	}
 
-	// FIXME needs to pull from queue
 	public void handleAdvertisement() {
 		BGPUpdate nextUpdate = this.incUpdateQueue.poll();
 		if (nextUpdate == null) {
@@ -172,11 +180,25 @@ public class AS {
 		boolean changed;
 
 		List<BGPPath> possList = this.inRib.get(dest);
+		BGPPath currentBest = this.pathSelection(possList);
+
+		BGPPath currentInstall = this.locRib.get(dest);
+		changed = (currentInstall == null || !currentBest.equals(currentInstall));
+		this.locRib.put(dest, currentBest);
 
 		/*
-		 * Actual path selection, abreviated: relationship => path len => tie
-		 * breaker
+		 * If we have a new path, mark that we have a dirty destination
 		 */
+		if (changed) {
+			this.dirtyDest.add(dest);
+		}
+	}
+	
+	/*
+	 * Actual path selection, abreviated: relationship => path len => tie
+	 * breaker
+	 */
+	private BGPPath pathSelection(List<BGPPath> possList){
 		BGPPath currentBest = null;
 		int currentRel = -4;
 		for (BGPPath tPath : possList) {
@@ -202,17 +224,8 @@ public class AS {
 				}
 			}
 		}
-
-		BGPPath currentInstall = this.locRib.get(dest);
-		changed = (currentInstall == null || !currentBest.equals(currentInstall));
-		this.locRib.put(dest, currentBest);
-
-		/*
-		 * If we have a new path, mark that we have a dirty destination
-		 */
-		if (changed) {
-			this.dirtyDest.add(dest);
-		}
+		
+		return currentBest;
 	}
 
 	private void sendUpdate(int dest) {
@@ -261,6 +274,22 @@ public class AS {
 		}
 
 		return -4;
+	}
+	
+	public BGPPath getPath(int dest){
+		return this.locRib.get(dest);
+	}
+	
+	public BGPPath getPathToPurged(List<Integer> hookASNs){
+		List<BGPPath> listPossPaths = new LinkedList<BGPPath>();
+		for(Integer tHook: hookASNs){
+			listPossPaths.add(this.getPath(tHook));
+		}
+		return this.pathSelection(listPossPaths);
+	}
+	
+	public List<BGPPath> getAllPathsTo(int dest){
+		return this.inRib.get(dest);
 	}
 
 	public Set<AS> getCustomers() {
