@@ -72,6 +72,9 @@ public class BGPMaster {
 		for (Thread tThread : slaveThreads) {
 			tThread.start();
 		}
+		
+		long bgpStartTime = System.currentTimeMillis();
+		System.out.println("Starting up the BGP processing.");
 
 		int stepCounter = 0;
 		boolean stuffToDo = true;
@@ -129,9 +132,11 @@ public class BGPMaster {
 				System.out.println("" + (stepCounter / 1000) + " (1k msgs)");
 			}
 		}
+		
+		bgpStartTime = bgpStartTime - System.currentTimeMillis();
+		System.out.println("BGP done, this took: " + (bgpStartTime / 60000) + " minutes.");
 
 		//self.tellDone();
-		System.out.println("all done here, holding to measure mem");
 		HashMap<Integer, DecoyAS>[] retArray = new HashMap[2];
 		retArray[0] = usefulASMap;
 		retArray[1] = prunedASMap;

@@ -40,9 +40,12 @@ public class Nightwing {
 		 * Run the correct mode
 		 */
 		if (mode == Nightwing.FIND_MODE) {
-
+			FindSim simDriver = new FindSim(liveTopo, prunedTopo);
+			simDriver.run();
+			simDriver.printResults();
 		} else if (mode == Nightwing.REPEAT_MODE) {
-
+			System.out.println("NOT IMPLEMENTED YET");
+			System.exit(-2);
 		} else {
 			System.out.println("mode fucked up, wtf.... " + mode);
 			System.exit(-2);
