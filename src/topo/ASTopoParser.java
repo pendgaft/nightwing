@@ -88,7 +88,7 @@ public class ASTopoParser {
 		while (fBuff.ready()) {
 			pollString = fBuff.readLine().trim();
 			if (pollString.length() > 0) {
-				int asn = Integer.parseInt(fBuff.readLine());
+				int asn = Integer.parseInt(pollString);
 				retMap.get(asn).toggleChinaAS();
 			}
 		}
