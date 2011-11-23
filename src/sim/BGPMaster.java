@@ -127,10 +127,10 @@ public class BGPMaster {
 			/*
 			 * A tiny bit of logging
 			 */
-			stepCounter++;
-			if (stepCounter % 1000 == 0) {
-				System.out.println("" + (stepCounter / 1000) + " (1k msgs)");
-			}
+//			stepCounter++;
+//			if (stepCounter % 1000 == 0) {
+//				System.out.println("" + (stepCounter / 1000) + " (1k msgs)");
+//			}
 		}
 		
 		bgpStartTime = bgpStartTime - System.currentTimeMillis();

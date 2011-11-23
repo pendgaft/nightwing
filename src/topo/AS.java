@@ -289,6 +289,9 @@ public class AS {
 	}
 	
 	public List<BGPPath> getAllPathsTo(int dest){
+		if(!this.inRib.containsKey(dest)){
+			return new LinkedList<BGPPath>();
+		}
 		return this.inRib.get(dest);
 	}
 
