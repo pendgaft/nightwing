@@ -10,7 +10,7 @@ public class DecoySeeder {
 		this.decoyCount = count;
 	}
 	
-	public void seed(HashMap<Integer, DecoyAS> liveAS, HashMap<Integer, DecoyAS> purgedAS){
+	public Set<Integer> seed(HashMap<Integer, DecoyAS> liveAS, HashMap<Integer, DecoyAS> purgedAS){
 		Random rng = new Random();
 		
 		/*
@@ -48,6 +48,8 @@ public class DecoySeeder {
 			focus.toggleDecoyRouter();
 			markedSet.add(test);
 		}
+		
+		return markedSet;
 	}
 
 }

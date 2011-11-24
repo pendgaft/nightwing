@@ -70,9 +70,10 @@ public class BGPMaster {
 			slaveThreads.add(new Thread(new BGPSlave(self)));
 		}
 		for (Thread tThread : slaveThreads) {
+			tThread.setDaemon(true);
 			tThread.start();
 		}
-		
+
 		long bgpStartTime = System.currentTimeMillis();
 		System.out.println("Starting up the BGP processing.");
 
@@ -117,7 +118,7 @@ public class BGPMaster {
 			 * point
 			 */
 			if (!stuffToDo && skipToMRAI) {
-				for(AS tAS: usefulASMap.values()){
+				for (AS tAS : usefulASMap.values()) {
 					tAS.mraiExpire();
 				}
 				skipToMRAI = false;
@@ -127,15 +128,17 @@ public class BGPMaster {
 			/*
 			 * A tiny bit of logging
 			 */
-//			stepCounter++;
-//			if (stepCounter % 1000 == 0) {
-//				System.out.println("" + (stepCounter / 1000) + " (1k msgs)");
-//			}
+			//			stepCounter++;
+			//			if (stepCounter % 1000 == 0) {
+			//				System.out.println("" + (stepCounter / 1000) + " (1k msgs)");
+			//			}
 		}
-		
-		bgpStartTime = bgpStartTime - System.currentTimeMillis();
+
+		bgpStartTime = System.currentTimeMillis() - bgpStartTime;
 		System.out.println("BGP done, this took: " + (bgpStartTime / 60000) + " minutes.");
 
+		BGPMaster.verifyConnected(usefulASMap);
+		
 		//self.tellDone();
 		HashMap<Integer, DecoyAS>[] retArray = new HashMap[2];
 		retArray[0] = usefulASMap;
@@ -171,8 +174,33 @@ public class BGPMaster {
 		}
 	}
 
-//	private void tellDone() {
-//		this.workSem.notifyAll();
-//	}
+	private static void verifyConnected(HashMap<Integer, DecoyAS> transitAS) {
+		long startTime = System.currentTimeMillis();
+		System.out.println("Starting connection verification");
+
+		double examinedPaths = 0.0;
+		double workingPaths = 0.0;
+		for (DecoyAS tAS : transitAS.values()) {
+			for (DecoyAS tDest : transitAS.values()) {
+				if (tDest.getASN() == tAS.getASN()) {
+					continue;
+				}
+
+				examinedPaths++;
+				if (tAS.getPath(tDest.getASN()) != null) {
+					workingPaths++;
+				}
+			}
+		}
+
+		startTime = System.currentTimeMillis() - startTime;
+		System.out.println("Verification done in: " + startTime);
+		System.out.println("Paths exist for " + workingPaths + " of " + examinedPaths + " possible ("
+				+ (workingPaths / examinedPaths * 100.0) + "%)");
+	}
+
+	//	private void tellDone() {
+	//		this.workSem.notifyAll();
+	//	}
 
 }
