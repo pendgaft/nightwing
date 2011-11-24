@@ -134,6 +134,7 @@ public class FindSim {
 			for (BGPPath tempPath : tempPathSet) {
 				if (!this.pathIsDirty(tempPath, tASN)) {
 					cleanSet.addAll(tempPath.getPath());
+					//FIXME add tASN as well...
 				}
 			}
 		}
