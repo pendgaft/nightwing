@@ -111,18 +111,23 @@ public class FindSim {
 		HashSet<Integer> cleanSet = new HashSet<Integer>();
 		HashSet<Integer> dirtySet = new HashSet<Integer>();
 		Set<BGPPath> tempPathSet = new HashSet<BGPPath>();
+
+		int noDest = 0;
 		for (int tASN : this.activeMap.keySet()) {
 			tempPathSet.clear();
 			for (DecoyAS tChina : this.chinaAS) {
 				tempPathSet.addAll(tChina.getAllPathsTo(tASN));
 			}
-
+			if(tempPathSet.size() == 0){
+			    noDest++;
+			}
 			for (BGPPath tempPath : tempPathSet) {
 				if (!this.pathIsDirty(tempPath, tASN)) {
 					cleanSet.addAll(tempPath.getPath());
 				}
 			}
 		}
+		System.out.println("No dest to transits: " + noDest);
 		for (int tASN : this.purgedMap.keySet()) {
 			tempPathSet.clear();
 			for (DecoyAS tChina : this.chinaAS) {
@@ -158,7 +163,7 @@ public class FindSim {
 			for (BGPPath tPath : tempPathSet) {
 				boolean only = true;
 				for (int tHop : tPath.getPath()) {
-					if (tHop != tASN && !cleanSet.contains(tHop)) {
+				    if ((tHop != tASN) && (!cleanSet.contains(tHop))) {
 						only = false;
 						break;
 					}
@@ -197,7 +202,7 @@ public class FindSim {
 			for (BGPPath tPath : tempPathSet) {
 				boolean only = true;
 				for (int tHop : tPath.getPath()) {
-					if (tHop != tASN && !cleanSet.contains(tHop)) {
+				    if ((tHop != tASN) && (!cleanSet.contains(tHop))) {
 						only = false;
 						break;
 					}
@@ -214,6 +219,7 @@ public class FindSim {
 			}
 		}
 
+		System.out.println("dirty size: " + dirtySet.size() + " clean size: " + cleanSet.size()); 
 		this.dirtyResultMap.get(stopPoint).add(dirtySet.size());
 		this.cleanResultMap.get(stopPoint).add(cleanSet.size());
 	}
