@@ -7,7 +7,7 @@ import decoy.DecoyAS;
 
 public class ASTopoParser {
 	
-	private static final String AS_REL_FILE = "as-rel-2010.txt";
+	private static final String AS_REL_FILE = "as-rel.txt";
 
 	public static void main(String args[]) throws IOException {
 		/*
