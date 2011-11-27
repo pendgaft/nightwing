@@ -64,8 +64,8 @@ public class BGPPath {
 	
 	public BGPPath deepCopy(){
 		BGPPath newPath = new BGPPath(this.destASN);
-		for(int tASN: this.path){
-			newPath.path.addLast(tASN);
+		for(int counter = 0; counter < this.path.size(); counter++){
+			newPath.path.addLast(this.path.get(counter));
 		}
 		return newPath;
 	}

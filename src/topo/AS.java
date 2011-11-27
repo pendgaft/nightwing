@@ -240,7 +240,7 @@ public class AS {
 				tCust.advPath(pathToAdv);
 				newAdvTo.add(tCust);
 			}
-			if (pathOfMerit.getDest() == this.asn || this.getRel(pathOfMerit.getNextHop()) == 1) {
+			if (pathOfMerit.getDest() == this.asn || (this.getRel(pathOfMerit.getNextHop()) == 1)) {
 				for (AS tPeer : this.peers) {
 					tPeer.advPath(pathToAdv);
 					newAdvTo.add(tPeer);
@@ -261,18 +261,27 @@ public class AS {
 	}
 
 	private int getRel(int asn) {
-		if (this.providers.contains(asn)) {
-			return -1;
-		} else if (this.peers.contains(asn)) {
-			return 0;
-		} else if (this.customers.contains(asn)) {
-			return 1;
+		for(AS tAS: this.providers){
+			if(tAS.getASN() == asn){
+				return -1;
+			}
+		}
+		for(AS tAS: this.peers){
+			if(tAS.getASN() == asn){
+				return 0;
+			}
+		}
+		for(AS tAS: this.customers){
+			if(tAS.getASN() == asn){
+				return 1;
+			}
 		}
 
 		if (asn == this.asn) {
 			return 2;
 		}
 
+		System.err.println("asked for relation on non-adj/non-self asn!");
 		return -4;
 	}
 	
