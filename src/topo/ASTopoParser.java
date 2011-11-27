@@ -6,6 +6,8 @@ import java.io.*;
 import decoy.DecoyAS;
 
 public class ASTopoParser {
+	
+	private static final String AS_REL_FILE = "as-rel-2010.txt";
 
 	public static void main(String args[]) throws IOException {
 		/*
@@ -14,7 +16,7 @@ public class ASTopoParser {
 	}
 
 	public static HashMap<Integer, DecoyAS> doNetworkBuild() throws IOException {
-		HashMap<Integer, DecoyAS> asMap = ASTopoParser.parseFile("as-rel.txt", "china-as.txt");
+		HashMap<Integer, DecoyAS> asMap = ASTopoParser.parseFile(ASTopoParser.AS_REL_FILE, "china-as.txt");
 		System.out.println("Raw topo size is: " + asMap.size());
 
 		/*
@@ -39,7 +41,7 @@ public class ASTopoParser {
 		return ASTopoParser.pruneNoCustomerAS(workingMap);
 	}
 
-	private static HashMap<Integer, DecoyAS> parseFile(String asRelFile, String chinaFile) throws IOException {
+	public static HashMap<Integer, DecoyAS> parseFile(String asRelFile, String chinaFile) throws IOException {
 
 		HashMap<Integer, DecoyAS> retMap = new HashMap<Integer, DecoyAS>();
 

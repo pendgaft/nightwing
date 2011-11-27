@@ -310,6 +310,11 @@ public class AS {
 	public int hashCode() {
 		return this.asn;
 	}
+	
+	public boolean equals(Object rhs){
+		AS rhsAS = (AS)rhs;
+		return this.asn == rhsAS.asn;
+	}
 
 	public int getASN() {
 		return this.asn;
