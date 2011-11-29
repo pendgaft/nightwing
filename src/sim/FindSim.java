@@ -19,6 +19,8 @@ public class FindSim {
 	private HashMap<Integer, List<Integer>> falseResultMap;
 
 	private static final int RUN_COUNT = 25;
+	private static final boolean ONLY_TRANSIT = true;
+	
 	private static final String LOG_DIR = "logs/";
 
 	public FindSim(HashMap<Integer, DecoyAS> activeMap, HashMap<Integer, DecoyAS> purgedMap) {
@@ -42,7 +44,7 @@ public class FindSim {
 
 		for (int expo = 0; expo < 11; expo++) {
 			int decoyCount = (int) Math.round(Math.pow(2, expo));
-			this.runOneDeployLevel(decoyCount);
+			this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT);
 		}
 
 		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
@@ -74,7 +76,7 @@ public class FindSim {
 		outBuff.close();
 	}
 
-	private void runOneDeployLevel(int size) {
+	private void runOneDeployLevel(int size, boolean onlyTransit) {
 		System.out.println("starting probe of deployment size: " + size);
 		long deploySizeStart = System.currentTimeMillis();
 		DecoySeeder placer = new DecoySeeder(size);
@@ -91,7 +93,7 @@ public class FindSim {
 				System.out.println("Starting run number: " + runs);
 				runStart = System.currentTimeMillis();
 			}
-			Set<Integer> correctSet = placer.seed(this.activeMap, this.purgedMap);
+			Set<Integer> correctSet = placer.seed(this.activeMap, this.purgedMap, onlyTransit);
 			this.probe(size, correctSet);
 
 			/*

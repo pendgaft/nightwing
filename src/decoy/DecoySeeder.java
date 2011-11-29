@@ -10,7 +10,7 @@ public class DecoySeeder {
 		this.decoyCount = count;
 	}
 	
-	public Set<Integer> seed(HashMap<Integer, DecoyAS> liveAS, HashMap<Integer, DecoyAS> purgedAS){
+	public Set<Integer> seed(HashMap<Integer, DecoyAS> liveAS, HashMap<Integer, DecoyAS> purgedAS, boolean onlyTransit){
 		Random rng = new Random();
 		
 		/*
@@ -45,11 +45,17 @@ public class DecoySeeder {
 				continue;
 			}
 			
+			if(onlyTransit && !liveAS.containsKey(test)){
+				continue;
+			}
+			
 			focus.toggleDecoyRouter();
 			markedSet.add(test);
 		}
 		
 		return markedSet;
 	}
+	
+	
 
 }
