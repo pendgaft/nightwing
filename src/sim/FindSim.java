@@ -42,9 +42,13 @@ public class FindSim {
 		long fullTimeStart = System.currentTimeMillis();
 		System.out.println("Starting decoy hunting sim.");
 
-		for (int expo = 0; expo < 11; expo++) {
-			int decoyCount = (int) Math.round(Math.pow(2, expo));
-			this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT);
+		//for (int expo = 0; expo < 11; expo++) {
+		//	int decoyCount = (int) Math.round(Math.pow(2, expo));
+		//	this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT);
+		//}
+
+		for(int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250){
+		    this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT);
 		}
 
 		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
