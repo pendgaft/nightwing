@@ -60,8 +60,9 @@ public class FindSim {
 		int totalASN = this.activeMap.size() + this.purgedMap.size();
 		outBuff.write("Decoy hunting sim - full size is," + totalASN + "\n");
 		outBuff.write("deploy size,mean dirty,std dev dirty,median dirty,mean clean,std dev clean,median clean,mean false, std dev false, median false\n");
-		for (int expo = 0; expo < 11; expo++) {
-			int decoyCount = (int) Math.round(Math.pow(2, expo));
+		//for (int expo = 0; expo < 11; expo++) {
+		for(int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250){
+			//int decoyCount = (int) Math.round(Math.pow(2, expo));
 			List<Integer> vals = this.dirtyResultMap.get(decoyCount);
 			double meanD = Stats.mean(vals);
 			double stdD = Stats.stdDev(vals);
