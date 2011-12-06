@@ -2,60 +2,114 @@ package decoy;
 
 import java.util.*;
 
+import topo.AS;
+
 public class DecoySeeder {
-	
+
 	private int decoyCount;
-	
-	public DecoySeeder(int count){
+
+	public DecoySeeder(int count) {
 		this.decoyCount = count;
 	}
-	
-	public Set<Integer> seed(HashMap<Integer, DecoyAS> liveAS, HashMap<Integer, DecoyAS> purgedAS, boolean onlyTransit){
+
+	public Set<Integer> seed(HashMap<Integer, DecoyAS> liveAS, HashMap<Integer, DecoyAS> purgedAS, boolean onlyTransit,
+			boolean saneChina) {
 		Random rng = new Random();
-		
+
 		/*
 		 * Sanity check that ASes are set to false
 		 */
-		for(DecoyAS tAS: liveAS.values()){
+		for (DecoyAS tAS : liveAS.values()) {
 			tAS.resetDecoyRouter();
 		}
-		for(DecoyAS tAS: purgedAS.values()){
+		for (DecoyAS tAS : purgedAS.values()) {
 			tAS.resetDecoyRouter();
 		}
-		
+
 		/*
 		 * Step through seeding decoy routing ASes
 		 */
 		HashSet<Integer> markedSet = new HashSet<Integer>();
-		while(markedSet.size() < this.decoyCount){
+		while (markedSet.size() < this.decoyCount) {
+			/*
+			 * Get a random ASN, we'll see if it hasn't been picked, exists, and
+			 * meets our critera (yes there are better ways to do this (read:
+			 * more efficient), but meh, this will get us to a valid deploy,
+			 * just a little slowly)
+			 */
 			int test = rng.nextInt(40000);
-			if(markedSet.contains(test)){
+			if (markedSet.contains(test)) {
 				continue;
 			}
-			
+
+			/*
+			 * Hunt in transit ASes for our ASN, if not there, check the
+			 * customer ASNs
+			 */
 			DecoyAS focus = null;
 			focus = liveAS.get(test);
-			if(focus == null){
+			if (focus == null) {
 				focus = purgedAS.get(test);
 			}
-			if(focus == null){
+
+			/*
+			 * We picked an ASN randomly that doesn't exist...
+			 */
+			if (focus == null) {
 				continue;
 			}
-			if(focus.isChinaAS()){
+
+			/*
+			 * China doesn't deploy DRs....
+			 */
+			if (focus.isChinaAS()) {
 				continue;
 			}
-			
-			if(onlyTransit && !liveAS.containsKey(test)){
+
+			/*
+			 * Clause to prevent us for selecting non-transit ASes as deployment
+			 * points for deflecting routers
+			 */
+			if (onlyTransit && !liveAS.containsKey(test)) {
 				continue;
 			}
-			
+
+			/*
+			 * Clause to prevent us from selecting a provider that directly
+			 * abutts China as a decoy, as they have a STRONG economic incentive
+			 * to not do such
+			 */
+			if (saneChina) {
+				boolean adjChina = false;
+				for (AS tAS : focus.getProviders()) {
+					if (tAS.isChinaAS()) {
+						adjChina = true;
+					}
+				}
+				for (AS tAS : focus.getPeers()) {
+					if (tAS.isChinaAS()) {
+						adjChina = true;
+					}
+				}
+				for (AS tAS : focus.getCustomers()) {
+					if (tAS.isChinaAS()) {
+						adjChina = true;
+					}
+				}
+
+				if (adjChina) {
+					continue;
+				}
+			}
+
+			/*
+			 * Yay! It is valid, mark it as such and record that fact
+			 */
 			focus.toggleDecoyRouter();
 			markedSet.add(test);
 		}
-		
+
 		return markedSet;
 	}
-	
-	
 
 }

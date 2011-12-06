@@ -18,8 +18,9 @@ public class FindSim {
 	private HashMap<Integer, List<Integer>> cleanResultMap;
 	private HashMap<Integer, List<Integer>> falseResultMap;
 
-	private static final int RUN_COUNT = 25;
+	private static final int RUN_COUNT = 1;
 	private static final boolean ONLY_TRANSIT = true;
+	private static final boolean ECONOMIC_DEPLOY = true;
 	
 	private static final String LOG_DIR = "logs/";
 
@@ -48,9 +49,21 @@ public class FindSim {
 		//}
 
 		for(int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250){
-		    this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT);
+		    this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT, FindSim.ECONOMIC_DEPLOY);
 		}
 
+		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
+		System.out.println("Full run took: " + fullTimeStart + " mins ");
+	}
+	
+	public void runTargeted(){
+		long fullTimeStart = System.currentTimeMillis();
+		System.out.println("Starting decoy hunting sim.");
+		LargeASDecoyPlacer seeder = new LargeASDecoyPlacer(this.activeMap);
+		for(int size = 0; size < 100; size++){
+			Set<Integer> groundTruth = seeder.seedSingleDecoyBySize(size);
+			this.probe(size, groundTruth);
+		}
 		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
 		System.out.println("Full run took: " + fullTimeStart + " mins ");
 	}
@@ -61,7 +74,8 @@ public class FindSim {
 		outBuff.write("Decoy hunting sim - full size is," + totalASN + "\n");
 		outBuff.write("deploy size,mean dirty,std dev dirty,median dirty,mean clean,std dev clean,median clean,mean false, std dev false, median false\n");
 		//for (int expo = 0; expo < 11; expo++) {
-		for(int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250){
+		//for(int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250){
+		for(int decoyCount = 0; decoyCount < 100; decoyCount++){
 			//int decoyCount = (int) Math.round(Math.pow(2, expo));
 			List<Integer> vals = this.dirtyResultMap.get(decoyCount);
 			double meanD = Stats.mean(vals);
@@ -81,7 +95,7 @@ public class FindSim {
 		outBuff.close();
 	}
 
-	private void runOneDeployLevel(int size, boolean onlyTransit) {
+	private void runOneDeployLevel(int size, boolean onlyTransit, boolean econDeploy) {
 		System.out.println("starting probe of deployment size: " + size);
 		long deploySizeStart = System.currentTimeMillis();
 		DecoySeeder placer = new DecoySeeder(size);
@@ -98,7 +112,7 @@ public class FindSim {
 				System.out.println("Starting run number: " + runs);
 				runStart = System.currentTimeMillis();
 			}
-			Set<Integer> correctSet = placer.seed(this.activeMap, this.purgedMap, onlyTransit);
+			Set<Integer> correctSet = placer.seed(this.activeMap, this.purgedMap, onlyTransit, econDeploy);
 			this.probe(size, correctSet);
 
 			/*
