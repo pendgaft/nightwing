@@ -61,6 +61,9 @@ public class FindSim {
 		System.out.println("Starting decoy hunting sim.");
 		LargeASDecoyPlacer seeder = new LargeASDecoyPlacer(this.activeMap);
 		for(int size = 0; size < 100; size++){
+			this.dirtyResultMap.put(size, new LinkedList<Integer>());
+			this.cleanResultMap.put(size, new LinkedList<Integer>());
+			this.falseResultMap.put(size, new LinkedList<Integer>());
 			Set<Integer> groundTruth = seeder.seedSingleDecoyBySize(size);
 			this.probe(size, groundTruth);
 		}
