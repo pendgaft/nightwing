@@ -11,6 +11,8 @@ public class Nightwing {
 	private static final int FIND_MODE = 1;
 	private static final String REPEAT_STRING = "repeat";
 	private static final int REPEAT_MODE = 2;
+	private static final String ASYM_STRING = "asym";
+	private static final int ASYM_MODE = 3;
 
 	public static void main(String[] args) throws IOException {
 
@@ -22,6 +24,8 @@ public class Nightwing {
 			mode = Nightwing.FIND_MODE;
 		} else if (args[0].equalsIgnoreCase(Nightwing.REPEAT_STRING)) {
 			mode = Nightwing.REPEAT_MODE;
+		} else if (args[0].equalsIgnoreCase(Nightwing.ASYM_STRING)) {
+			mode = Nightwing.ASYM_MODE;
 		} else {
 			System.out.println("bad mode: " + args[0]);
 			System.exit(-1);
@@ -47,6 +51,9 @@ public class Nightwing {
 		} else if (mode == Nightwing.REPEAT_MODE) {
 			System.out.println("NOT IMPLEMENTED YET");
 			System.exit(-2);
+		} else if (mode == Nightwing.ASYM_MODE) {
+			PathAsym simDriver = new PathAsym(liveTopo, prunedTopo);
+			simDriver.buildPathSymCDF();
 		} else {
 			System.out.println("mode fucked up, wtf.... " + mode);
 			System.exit(-2);

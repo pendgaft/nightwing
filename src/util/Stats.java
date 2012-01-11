@@ -1,5 +1,6 @@
 package util;
 
+import java.io.*;
 import java.util.*;
 
 public class Stats {
@@ -35,5 +36,20 @@ public class Stats {
 		}
 		
 		return Math.sqrt(sum / ((double)vals.size()));
+	}
+	
+	public static void printCDF(List<Double> vals, String fileName) throws IOException{
+		Collections.sort(vals);
+		double fracStep = 1.0 / (double)vals.size();
+		double currStep = 0.0;
+		
+		BufferedWriter outFile = new BufferedWriter(new FileWriter(fileName));
+		
+		for(int counter = 0; counter < vals.size(); counter++){
+			currStep += fracStep;
+			outFile.write("" + currStep + "," + vals.get(counter) + "\n");
+		}
+		
+		outFile.close();		
 	}
 }
