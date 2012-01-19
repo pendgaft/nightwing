@@ -148,9 +148,9 @@ public class AS {
 
 		recalcBestPath(dest);
 	}
-	
-	public void mraiExpire(){
-		for(int tDest: this.dirtyDest){
+
+	public void mraiExpire() {
+		for (int tDest : this.dirtyDest) {
 			this.sendUpdate(tDest);
 		}
 		this.dirtyDest.clear();
@@ -167,8 +167,8 @@ public class AS {
 	public boolean hasWorkToDo() {
 		return !this.incUpdateQueue.isEmpty();
 	}
-	
-	public boolean hasDirtyPrefixes(){
+
+	public boolean hasDirtyPrefixes() {
 		return !this.dirtyDest.isEmpty();
 	}
 
@@ -193,12 +193,12 @@ public class AS {
 			this.dirtyDest.add(dest);
 		}
 	}
-	
+
 	/*
 	 * Actual path selection, abreviated: relationship => path len => tie
 	 * breaker
 	 */
-	private BGPPath pathSelection(List<BGPPath> possList){
+	private BGPPath pathSelection(List<BGPPath> possList) {
 		BGPPath currentBest = null;
 		int currentRel = -4;
 		for (BGPPath tPath : possList) {
@@ -224,7 +224,7 @@ public class AS {
 				}
 			}
 		}
-		
+
 		return currentBest;
 	}
 
@@ -261,18 +261,18 @@ public class AS {
 	}
 
 	private int getRel(int asn) {
-		for(AS tAS: this.providers){
-			if(tAS.getASN() == asn){
+		for (AS tAS : this.providers) {
+			if (tAS.getASN() == asn) {
 				return -1;
 			}
 		}
-		for(AS tAS: this.peers){
-			if(tAS.getASN() == asn){
+		for (AS tAS : this.peers) {
+			if (tAS.getASN() == asn) {
 				return 0;
 			}
 		}
-		for(AS tAS: this.customers){
-			if(tAS.getASN() == asn){
+		for (AS tAS : this.customers) {
+			if (tAS.getASN() == asn) {
 				return 1;
 			}
 		}
@@ -281,24 +281,25 @@ public class AS {
 			return 2;
 		}
 
-		System.err.println("asked for relation on non-adj/non-self asn!");
-		return -4;
+		System.err.println("asked for relation on non-adj/non-self asn, depending on sim "
+				+ "this might be expected, if you're not, you should prob restart this sim...!");
+		return 2;
 	}
-	
-	public BGPPath getPath(int dest){
+
+	public BGPPath getPath(int dest) {
 		return this.locRib.get(dest);
 	}
-	
-	public BGPPath getPathToPurged(List<Integer> hookASNs){
+
+	public BGPPath getPathToPurged(List<Integer> hookASNs) {
 		List<BGPPath> listPossPaths = new LinkedList<BGPPath>();
-		for(Integer tHook: hookASNs){
+		for (Integer tHook : hookASNs) {
 			listPossPaths.add(this.getPath(tHook));
 		}
 		return this.pathSelection(listPossPaths);
 	}
-	
-	public List<BGPPath> getAllPathsTo(int dest){
-		if(!this.inRib.containsKey(dest)){
+
+	public List<BGPPath> getAllPathsTo(int dest) {
+		if (!this.inRib.containsKey(dest)) {
 			return new LinkedList<BGPPath>();
 		}
 		return this.inRib.get(dest);
@@ -319,9 +320,9 @@ public class AS {
 	public int hashCode() {
 		return this.asn;
 	}
-	
-	public boolean equals(Object rhs){
-		AS rhsAS = (AS)rhs;
+
+	public boolean equals(Object rhs) {
+		AS rhsAS = (AS) rhs;
 		return this.asn == rhsAS.asn;
 	}
 
@@ -336,28 +337,28 @@ public class AS {
 	public int getCustomerCount() {
 		return this.customers.size();
 	}
-	
-	public void toggleChinaAS(){
+
+	public void toggleChinaAS() {
 		this.chinaAS = true;
 	}
-	
-	public boolean isChinaAS(){
+
+	public boolean isChinaAS() {
 		return this.chinaAS;
 	}
-	
-	public boolean connectedToChinaAS(){
-		for(AS tAS: this.customers){
-			if(tAS.isChinaAS()){
+
+	public boolean connectedToChinaAS() {
+		for (AS tAS : this.customers) {
+			if (tAS.isChinaAS()) {
 				return true;
 			}
 		}
-		for(AS tAS: this.providers){
-			if(tAS.isChinaAS()){
+		for (AS tAS : this.providers) {
+			if (tAS.isChinaAS()) {
 				return true;
 			}
 		}
-		for(AS tAS: this.peers){
-			if(tAS.isChinaAS()){
+		for (AS tAS : this.peers) {
+			if (tAS.isChinaAS()) {
 				return true;
 			}
 		}

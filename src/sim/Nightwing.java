@@ -13,6 +13,8 @@ public class Nightwing {
 	private static final int REPEAT_MODE = 2;
 	private static final String ASYM_STRING = "asym";
 	private static final int ASYM_MODE = 3;
+	private static final String ACTIVE_AVOID_STRING = "avoid";
+	private static final int ACTIVE_MODE = 4;
 
 	public static void main(String[] args) throws IOException {
 
@@ -20,12 +22,16 @@ public class Nightwing {
 		 * Figure out mode that we're running
 		 */
 		int mode = 0;
+		int avoidSize = 0;
 		if (args[0].equalsIgnoreCase(Nightwing.FIND_STRING)) {
 			mode = Nightwing.FIND_MODE;
 		} else if (args[0].equalsIgnoreCase(Nightwing.REPEAT_STRING)) {
 			mode = Nightwing.REPEAT_MODE;
 		} else if (args[0].equalsIgnoreCase(Nightwing.ASYM_STRING)) {
 			mode = Nightwing.ASYM_MODE;
+		} else if (args[0].equalsIgnoreCase(Nightwing.ACTIVE_AVOID_STRING)) {
+			mode = Nightwing.ACTIVE_MODE;
+			avoidSize = Integer.parseInt(args[1]);
 		} else {
 			System.out.println("bad mode: " + args[0]);
 			System.exit(-1);
@@ -35,7 +41,7 @@ public class Nightwing {
 		/*
 		 * Build the topology, and store in Maps
 		 */
-		HashMap<Integer, DecoyAS>[] topoArray = BGPMaster.buildBGPConnection();
+		HashMap<Integer, DecoyAS>[] topoArray = BGPMaster.buildBGPConnection(avoidSize);
 		HashMap<Integer, DecoyAS> liveTopo = topoArray[0];
 		HashMap<Integer, DecoyAS> prunedTopo = topoArray[1];
 		System.out.println("Topo built and BGP converged.");
@@ -54,6 +60,9 @@ public class Nightwing {
 		} else if (mode == Nightwing.ASYM_MODE) {
 			PathAsym simDriver = new PathAsym(liveTopo, prunedTopo);
 			simDriver.buildPathSymCDF();
+		} else if (mode == Nightwing.ACTIVE_MODE) {
+			FindSim simDriver = new FindSim(liveTopo, prunedTopo);
+			simDriver.runActive(avoidSize);
 		} else {
 			System.out.println("mode fucked up, wtf.... " + mode);
 			System.exit(-2);
