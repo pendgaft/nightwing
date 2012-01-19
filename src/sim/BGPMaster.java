@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import decoy.DecoyAS;
+import decoy.LargeASDecoyPlacer;
 import topo.AS;
 import topo.ASTopoParser;
 import topo.BGPPath;
@@ -20,7 +21,7 @@ public class BGPMaster {
 	private static final int WORK_BLOCK_SIZE = 40;
 
 	@SuppressWarnings("unchecked")
-	public static HashMap<Integer, DecoyAS>[] buildBGPConnection() throws IOException {
+	public static HashMap<Integer, DecoyAS>[] buildBGPConnection(int chinaAvoidanceSize) throws IOException {
 
 		/*
 		 * Build AS map
@@ -29,10 +30,23 @@ public class BGPMaster {
 		HashMap<Integer, DecoyAS> prunedASMap = ASTopoParser.doNetworkPrune(usefulASMap);
 
 		/*
+		 * If we're doing active return path avoidance, setup here
+		 */
+		LargeASDecoyPlacer deployer = new LargeASDecoyPlacer(usefulASMap);
+		Set<Integer> avoidSet = deployer.seedNLargest(chinaAvoidanceSize);
+
+		/*
 		 * Give everyone their self network
 		 */
 		for (AS tAS : usefulASMap.values()) {
-			tAS.advPath(new BGPPath(tAS.getASN()));
+			if (tAS.isChinaAS()) {
+				BGPPath tempPath = new BGPPath(tAS.getASN());
+				for(int tAvoid: avoidSet){
+					tempPath.appendASToPath(tAvoid);
+				}
+			} else {
+				tAS.advPath(new BGPPath(tAS.getASN()));
+			}
 		}
 
 		/*
@@ -138,7 +152,7 @@ public class BGPMaster {
 		System.out.println("BGP done, this took: " + (bgpStartTime / 60000) + " minutes.");
 
 		BGPMaster.verifyConnected(usefulASMap);
-		
+
 		//self.tellDone();
 		HashMap<Integer, DecoyAS>[] retArray = new HashMap[2];
 		retArray[0] = usefulASMap;

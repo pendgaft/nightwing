@@ -21,7 +21,7 @@ public class FindSim {
 	private static final int RUN_COUNT = 1;
 	private static final boolean ONLY_TRANSIT = true;
 	private static final boolean ECONOMIC_DEPLOY = true;
-	
+
 	private static final String LOG_DIR = "logs/";
 
 	public FindSim(HashMap<Integer, DecoyAS> activeMap, HashMap<Integer, DecoyAS> purgedMap) {
@@ -48,19 +48,19 @@ public class FindSim {
 		//	this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT);
 		//}
 
-		for(int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250){
-		    this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT, FindSim.ECONOMIC_DEPLOY);
+		for (int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250) {
+			this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT, FindSim.ECONOMIC_DEPLOY);
 		}
 
 		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
 		System.out.println("Full run took: " + fullTimeStart + " mins ");
 	}
-	
-	public void runTargeted(){
+
+	public void runTargeted() {
 		long fullTimeStart = System.currentTimeMillis();
 		System.out.println("Starting decoy hunting sim.");
 		LargeASDecoyPlacer seeder = new LargeASDecoyPlacer(this.activeMap);
-		for(int size = 0; size < 100; size++){
+		for (int size = 0; size < 100; size++) {
 			this.dirtyResultMap.put(size, new LinkedList<Integer>());
 			this.cleanResultMap.put(size, new LinkedList<Integer>());
 			this.falseResultMap.put(size, new LinkedList<Integer>());
@@ -71,14 +71,34 @@ public class FindSim {
 		System.out.println("Full run took: " + fullTimeStart + " mins ");
 	}
 
+	public void runActive(int avoidSize) throws IOException {
+		LargeASDecoyPlacer seeder = new LargeASDecoyPlacer(this.activeMap);
+		Set<Integer> groundTruth = seeder.seedNLargest(avoidSize);
+		Set<Integer> reverseSet = this.probeReversePath();
+		Set<Integer> forwardSet = this.probe(avoidSize, groundTruth);
+		Set<Integer> tempSet = new HashSet<Integer>();
+		tempSet.addAll(reverseSet);
+		tempSet.removeAll(forwardSet);
+		Set<Integer> otherTempSet = new HashSet<Integer>();
+		otherTempSet.addAll(forwardSet);
+		otherTempSet.removeAll(reverseSet);
+
+		BufferedWriter outBuff = new BufferedWriter(new FileWriter(FindSim.LOG_DIR + "active.csv"));
+		outBuff.write("forward,reverse,size delta,in reverse not forward,in forward not reverse\n");
+		outBuff.write("" + forwardSet.size() + "," + reverseSet.size() + "," + (forwardSet.size() - reverseSet.size())
+				+ "," + tempSet.size() + "," + otherTempSet.size() + "\n");
+		outBuff.close();
+	}
+
 	public void printResults() throws IOException {
 		BufferedWriter outBuff = new BufferedWriter(new FileWriter(FindSim.LOG_DIR + "decoy-hunt.csv"));
 		int totalASN = this.activeMap.size() + this.purgedMap.size();
 		outBuff.write("Decoy hunting sim - full size is," + totalASN + "\n");
-		outBuff.write("deploy size,mean dirty,std dev dirty,median dirty,mean clean,std dev clean,median clean,mean false, std dev false, median false\n");
+		outBuff
+				.write("deploy size,mean dirty,std dev dirty,median dirty,mean clean,std dev clean,median clean,mean false, std dev false, median false\n");
 		//for (int expo = 0; expo < 11; expo++) {
 		//for(int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250){
-		for(int decoyCount = 0; decoyCount < 100; decoyCount++){
+		for (int decoyCount = 0; decoyCount < 100; decoyCount++) {
 			//int decoyCount = (int) Math.round(Math.pow(2, expo));
 			List<Integer> vals = this.dirtyResultMap.get(decoyCount);
 			double meanD = Stats.mean(vals);
@@ -134,7 +154,38 @@ public class FindSim {
 		System.out.println("Probe of deployment size: " + size + " took " + deploySizeStart + " seconds.");
 	}
 
-	private void probe(int stopPoint, Set<Integer> groundTruth) {
+	private Set<Integer> probeReversePath() {
+		Set<Integer> cleanASNs = new HashSet<Integer>();
+
+		//look at each source of traffic
+		for (int tASN : this.activeMap.keySet()) {
+
+			DecoyAS tempAS = this.activeMap.get(tASN);
+			if (tempAS.isDecoy()) {
+				//don't accidently count a dirty AS as clean just because it has a path
+				continue;
+			}
+			//see if any path to a china asn exists (and is clean)
+			for (AS tChina : this.chinaAS) {
+				if (tempAS.getPath(tChina.getASN()) != null) {
+					cleanASNs.add(tASN);
+					break;
+				}
+			}
+		}
+		for (int tASN : this.purgedMap.keySet()) {
+			DecoyAS tempAS = this.purgedMap.get(tASN);
+			for (AS tProv : tempAS.getProviders()) {
+				if (cleanASNs.contains(tProv.getASN())) {
+					cleanASNs.add(tASN);
+				}
+			}
+		}
+
+		return cleanASNs;
+	}
+
+	private Set<Integer> probe(int stopPoint, Set<Integer> groundTruth) {
 
 		/*
 		 * start building the clean set, we'll first look at all ASNs that lie
@@ -262,6 +313,8 @@ public class FindSim {
 		this.dirtyResultMap.get(stopPoint).add(baseSize - dirtySet.size());
 		this.cleanResultMap.get(stopPoint).add(cleanSet.size());
 		this.falseResultMap.get(stopPoint).add(dirtySet.size());
+
+		return cleanSet;
 	}
 
 	private boolean pathIsDirty(BGPPath path, int dest) {
