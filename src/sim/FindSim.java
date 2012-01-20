@@ -72,10 +72,30 @@ public class FindSim {
 	}
 
 	public void runActive(int avoidSize) throws IOException {
+
+		/*
+		 * We don't have the seeding in this context, so build it again,
+		 * thankfully it is deterministic
+		 */
 		LargeASDecoyPlacer seeder = new LargeASDecoyPlacer(this.activeMap);
 		Set<Integer> groundTruth = seeder.seedNLargest(avoidSize);
+
+		/*
+		 * Setup some vars so probe doesn't shit everywhere w/ null pointers
+		 */
+		this.dirtyResultMap.put(avoidSize, new LinkedList<Integer>());
+		this.cleanResultMap.put(avoidSize, new LinkedList<Integer>());
+		this.falseResultMap.put(avoidSize, new LinkedList<Integer>());
+
+		/*
+		 * do the actual reachability test
+		 */
 		Set<Integer> reverseSet = this.probeReversePath();
 		Set<Integer> forwardSet = this.probe(avoidSize, groundTruth);
+
+		/*
+		 * Do some set intersections
+		 */
 		Set<Integer> tempSet = new HashSet<Integer>();
 		tempSet.addAll(reverseSet);
 		tempSet.removeAll(forwardSet);
@@ -83,6 +103,9 @@ public class FindSim {
 		otherTempSet.addAll(forwardSet);
 		otherTempSet.removeAll(reverseSet);
 
+		/*
+		 * Output to a file
+		 */
 		BufferedWriter outBuff = new BufferedWriter(new FileWriter(FindSim.LOG_DIR + "active.csv"));
 		outBuff.write("forward,reverse,size delta,in reverse not forward,in forward not reverse\n");
 		outBuff.write("" + forwardSet.size() + "," + reverseSet.size() + "," + (forwardSet.size() - reverseSet.size())
