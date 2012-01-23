@@ -58,6 +58,9 @@ public class LargeASDecoyPlacer {
 			if(considered.contains(tAS.getASN())){
 				continue;
 			}
+			if(tAS.isChinaAS()){
+				continue;
+			}
 			
 			if(tAS.getDegree() > currMax){
 				currMax = tAS.getDegree();
