@@ -64,7 +64,8 @@ public class FindSim {
 			this.dirtyResultMap.put(size, new LinkedList<Integer>());
 			this.cleanResultMap.put(size, new LinkedList<Integer>());
 			this.falseResultMap.put(size, new LinkedList<Integer>());
-			Set<Integer> groundTruth = seeder.seedSingleDecoyBySize(size);
+			//Set<Integer> groundTruth = seeder.seedSingleDecoyBySize(size);
+			Set<Integer> groundTruth = seeder.seedNLargest(size);
 			this.probe(size, groundTruth);
 		}
 		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
