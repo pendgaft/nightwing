@@ -12,6 +12,16 @@ public class BGPPath {
 		this.path = new LinkedList<Integer>();
 	}
 	
+	public boolean containsAnyOf(HashSet<Integer> testASNs){
+		for(int tHop: this.path){
+			if(testASNs.contains(tHop)){
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
 	public int getPathLength(){
 		return this.path.size();
 	}

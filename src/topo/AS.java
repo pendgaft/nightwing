@@ -47,6 +47,14 @@ public class AS {
 		this.incUpdateQueue = new LinkedBlockingQueue<BGPUpdate>();
 		this.dirtyDest = new HashSet<Integer>();
 	}
+	
+	public static HashSet<Integer> buildASNSet(HashSet<AS> asSet){
+		HashSet<Integer> outSet = new HashSet<Integer>();
+		for(AS tAS: asSet){
+			outSet.add(tAS.getASN());
+		}
+		return outSet;
+	}
 
 	public void addRelation(AS otherAS, int myRelationToThem) {
 		if (myRelationToThem == AS.PROIVDER_CODE) {
