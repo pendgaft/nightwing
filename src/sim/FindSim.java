@@ -24,7 +24,8 @@ public class FindSim {
 
 	private static final String LOG_DIR = "logs/";
 
-	public FindSim(HashMap<Integer, DecoyAS> activeMap, HashMap<Integer, DecoyAS> purgedMap) {
+	public FindSim(HashMap<Integer, DecoyAS> activeMap,
+			HashMap<Integer, DecoyAS> purgedMap) {
 		super();
 		this.activeMap = activeMap;
 		this.purgedMap = purgedMap;
@@ -43,13 +44,16 @@ public class FindSim {
 		long fullTimeStart = System.currentTimeMillis();
 		System.out.println("Starting decoy hunting sim.");
 
-		//for (int expo = 0; expo < 11; expo++) {
-		//	int decoyCount = (int) Math.round(Math.pow(2, expo));
-		//	this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT);
-		//}
+		// for (int expo = 0; expo < 11; expo++) {
+		// int decoyCount = (int) Math.round(Math.pow(2, expo));
+		// this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT);
+		// }
 
 		for (int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250) {
-			this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT, FindSim.ECONOMIC_DEPLOY);
+			DecoySeeder seeder = new DecoySeeder(decoyCount, this.activeMap,
+					this.purgedMap, FindSim.ONLY_TRANSIT,
+					FindSim.ECONOMIC_DEPLOY);
+			this.runOneDeployLevel(decoyCount, seeder);
 		}
 
 		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
@@ -64,9 +68,22 @@ public class FindSim {
 			this.dirtyResultMap.put(size, new LinkedList<Integer>());
 			this.cleanResultMap.put(size, new LinkedList<Integer>());
 			this.falseResultMap.put(size, new LinkedList<Integer>());
-			//Set<Integer> groundTruth = seeder.seedSingleDecoyBySize(size);
+			// Set<Integer> groundTruth = seeder.seedSingleDecoyBySize(size);
 			Set<Integer> groundTruth = seeder.seedNLargest(size);
 			this.probe(size, groundTruth);
+		}
+		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
+		System.out.println("Full run took: " + fullTimeStart + " mins ");
+	}
+
+	public void runRings() {
+		long fullTimeStart = System.currentTimeMillis();
+		System.out.println("Starting decoy hunting sim.");
+		Rings ringMaker = new Rings(this.activeMap, this.purgedMap);
+		ringMaker.setupSeeder(2);
+		for (int size = 100; size < 2000; size = size + 100) {
+			ringMaker.setDecoySeedSize(size);
+			this.runOneDeployLevel(size, ringMaker);
 		}
 		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
 		System.out.println("Full run took: " + fullTimeStart + " mins ");
@@ -107,23 +124,26 @@ public class FindSim {
 		/*
 		 * Output to a file
 		 */
-		BufferedWriter outBuff = new BufferedWriter(new FileWriter(FindSim.LOG_DIR + "active.csv"));
+		BufferedWriter outBuff = new BufferedWriter(new FileWriter(
+				FindSim.LOG_DIR + "active.csv"));
 		outBuff.write("forward,reverse,size delta,in reverse not forward,in forward not reverse\n");
-		outBuff.write("" + forwardSet.size() + "," + reverseSet.size() + "," + (forwardSet.size() - reverseSet.size())
-				+ "," + tempSet.size() + "," + otherTempSet.size() + "\n");
+		outBuff.write("" + forwardSet.size() + "," + reverseSet.size() + ","
+				+ (forwardSet.size() - reverseSet.size()) + ","
+				+ tempSet.size() + "," + otherTempSet.size() + "\n");
 		outBuff.close();
 	}
 
 	public void printResults() throws IOException {
-		BufferedWriter outBuff = new BufferedWriter(new FileWriter(FindSim.LOG_DIR + "decoy-hunt.csv"));
+		BufferedWriter outBuff = new BufferedWriter(new FileWriter(
+				FindSim.LOG_DIR + "decoy-hunt.csv"));
 		int totalASN = this.activeMap.size() + this.purgedMap.size();
 		outBuff.write("Decoy hunting sim - full size is," + totalASN + "\n");
-		outBuff
-				.write("deploy size,mean dirty,std dev dirty,median dirty,mean clean,std dev clean,median clean,mean false, std dev false, median false\n");
-		//for (int expo = 0; expo < 11; expo++) {
-		//for(int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250){
+		outBuff.write("deploy size,mean dirty,std dev dirty,median dirty,mean clean,std dev clean,median clean,mean false, std dev false, median false\n");
+		// for (int expo = 0; expo < 11; expo++) {
+		// for(int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount
+		// + 250){
 		for (int decoyCount = 0; decoyCount < 100; decoyCount++) {
-			//int decoyCount = (int) Math.round(Math.pow(2, expo));
+			// int decoyCount = (int) Math.round(Math.pow(2, expo));
 			List<Integer> vals = this.dirtyResultMap.get(decoyCount);
 			double meanD = Stats.mean(vals);
 			double stdD = Stats.stdDev(vals);
@@ -136,16 +156,16 @@ public class FindSim {
 			double meanF = Stats.mean(vals);
 			double stdF = Stats.stdDev(vals);
 			double medF = Stats.median(vals);
-			outBuff.write("" + decoyCount + "," + meanD + "," + stdD + "," + medD + "," + meanC + "," + stdC + ","
-					+ medC + "," + meanF + "," + stdF + "," + medF + "\n");
+			outBuff.write("" + decoyCount + "," + meanD + "," + stdD + ","
+					+ medD + "," + meanC + "," + stdC + "," + medC + ","
+					+ meanF + "," + stdF + "," + medF + "\n");
 		}
 		outBuff.close();
 	}
 
-	private void runOneDeployLevel(int size, boolean onlyTransit, boolean econDeploy) {
+	private void runOneDeployLevel(int size, Seeder decoySeeder) {
 		System.out.println("starting probe of deployment size: " + size);
 		long deploySizeStart = System.currentTimeMillis();
-		DecoySeeder placer = new DecoySeeder(size);
 		this.dirtyResultMap.put(size, new LinkedList<Integer>());
 		this.cleanResultMap.put(size, new LinkedList<Integer>());
 		this.falseResultMap.put(size, new LinkedList<Integer>());
@@ -159,7 +179,7 @@ public class FindSim {
 				System.out.println("Starting run number: " + runs);
 				runStart = System.currentTimeMillis();
 			}
-			Set<Integer> correctSet = placer.seed(this.activeMap, this.purgedMap, onlyTransit, econDeploy);
+			Set<Integer> correctSet = decoySeeder.seedDecoys();
 			this.probe(size, correctSet);
 
 			/*
@@ -175,21 +195,23 @@ public class FindSim {
 		 * Deployment timing info
 		 */
 		deploySizeStart = (System.currentTimeMillis() - deploySizeStart) / 1000;
-		System.out.println("Probe of deployment size: " + size + " took " + deploySizeStart + " seconds.");
+		System.out.println("Probe of deployment size: " + size + " took "
+				+ deploySizeStart + " seconds.");
 	}
 
 	private Set<Integer> probeReversePath() {
 		Set<Integer> cleanASNs = new HashSet<Integer>();
 
-		//look at each source of traffic
+		// look at each source of traffic
 		for (int tASN : this.activeMap.keySet()) {
 
 			DecoyAS tempAS = this.activeMap.get(tASN);
 			if (tempAS.isDecoy()) {
-				//don't accidently count a dirty AS as clean just because it has a path
+				// don't accidently count a dirty AS as clean just because it
+				// has a path
 				continue;
 			}
-			//see if any path to a china asn exists (and is clean)
+			// see if any path to a china asn exists (and is clean)
 			for (AS tChina : this.chinaAS) {
 				if (tempAS.getPath(tChina.getASN()) != null) {
 					cleanASNs.add(tASN);
@@ -327,7 +349,8 @@ public class FindSim {
 			}
 		}
 
-		System.out.println("dirty size: " + dirtySet.size() + " clean size: " + cleanSet.size());
+		System.out.println("dirty size: " + dirtySet.size() + " clean size: "
+				+ cleanSet.size());
 		/*
 		 * base size is the number of ASNs we finger, we then remove the ground
 		 * truth, leaving any false positives in dirtySet
