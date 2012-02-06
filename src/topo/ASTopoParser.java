@@ -1,6 +1,7 @@
 package topo;
 
 import java.util.*;
+import java.util.regex.*;
 import java.io.*;
 
 import decoy.DecoyAS;
@@ -8,6 +9,7 @@ import decoy.DecoyAS;
 public class ASTopoParser {
 	
 	private static final String AS_REL_FILE = "as-rel.txt";
+	private static final String AS_IP_FILE = "ip-count.csv";
 
 	public static void main(String args[]) throws IOException {
 		/*
@@ -18,6 +20,7 @@ public class ASTopoParser {
 	public static HashMap<Integer, DecoyAS> doNetworkBuild() throws IOException {
 		HashMap<Integer, DecoyAS> asMap = ASTopoParser.parseFile(ASTopoParser.AS_REL_FILE, "china-as.txt");
 		System.out.println("Raw topo size is: " + asMap.size());
+		ASTopoParser.parseIPScoreFile(asMap);
 
 		/*
 		 * Base is 32k, stub prune => 23k, second stub prune => 22k
@@ -97,6 +100,20 @@ public class ASTopoParser {
 		fBuff.close();
 
 		return retMap;
+	}
+	
+	private static void parseIPScoreFile(HashMap<Integer, DecoyAS> asMap) throws IOException{
+		BufferedReader fBuff = new BufferedReader(new FileReader(ASTopoParser.AS_IP_FILE));
+		Pattern fuckYouJava = Pattern.compile("(\\d+),(\\d+)");
+		while(fBuff.ready()){
+			String pollString = fBuff.readLine();
+			Matcher tMatch = fuckYouJava.matcher(pollString);
+			tMatch.find();
+			int tAS = Integer.parseInt(tMatch.group(1));
+			int score = Integer.parseInt(tMatch.group(2));
+			asMap.get(tAS).setIPCount(score);
+		}
+		fBuff.close();
 	}
 
 	public static void validateRelexive(HashMap<Integer, AS> asMap) {

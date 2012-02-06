@@ -21,6 +21,7 @@ public class FindSim {
 	private static final int RUN_COUNT = 1;
 	private static final boolean ONLY_TRANSIT = true;
 	private static final boolean ECONOMIC_DEPLOY = true;
+	private static final boolean SCORE_BY_IP = false;
 
 	private static final String LOG_DIR = "logs/";
 
@@ -242,6 +243,7 @@ public class FindSim {
 		Set<BGPPath> tempPathSet = new HashSet<BGPPath>();
 
 		int noDest = 0;
+		long ipScore = 0;
 		for (int tASN : this.activeMap.keySet()) {
 			tempPathSet.clear();
 			for (DecoyAS tChina : this.chinaAS) {
@@ -252,6 +254,9 @@ public class FindSim {
 			}
 			for (BGPPath tempPath : tempPathSet) {
 				if (!this.pathIsDirty(tempPath, tASN)) {
+					if(FindSim.SCORE_BY_IP){
+						ipScore += this.activeMap.get(tASN).getIPCount();
+					}
 					cleanSet.addAll(tempPath.getPath());
 				}
 			}
@@ -267,6 +272,9 @@ public class FindSim {
 
 			for (BGPPath tempPath : tempPathSet) {
 				if (!this.pathIsDirty(tempPath, tASN)) {
+					if(FindSim.SCORE_BY_IP){
+						ipScore += this.purgedMap.get(tASN).getIPCount();
+					}
 					cleanSet.addAll(tempPath.getPath());
 					cleanSet.add(tASN);
 				}

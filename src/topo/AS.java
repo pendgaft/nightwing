@@ -19,6 +19,7 @@ public class AS {
 	private Set<AS> customers;
 	private Set<AS> peers;
 	private Set<AS> providers;
+	private int numberOfIPs;
 
 	private HashMap<Integer, List<BGPPath>> adjInRib;
 	private HashMap<Integer, List<BGPPath>> inRib;
@@ -46,6 +47,14 @@ public class AS {
 
 		this.incUpdateQueue = new LinkedBlockingQueue<BGPUpdate>();
 		this.dirtyDest = new HashSet<Integer>();
+	}
+	
+	public void setIPCount(int ipCount){
+		this.numberOfIPs = ipCount;
+	}
+	
+	public int getIPCount(){
+		return this.numberOfIPs;
 	}
 	
 	public static HashSet<Integer> buildASNSet(HashSet<AS> asSet){
