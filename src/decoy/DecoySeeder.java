@@ -4,16 +4,25 @@ import java.util.*;
 
 import topo.AS;
 
-public class DecoySeeder {
+public class DecoySeeder implements Seeder{
 
 	private int decoyCount;
+	private HashMap<Integer, DecoyAS> liveAS;
+	private HashMap<Integer, DecoyAS> purgedAS;
+	private boolean onlyTransit;
+	private boolean saneChina;
 
-	public DecoySeeder(int count) {
+	public DecoySeeder(int count, HashMap<Integer, DecoyAS> liveAS,
+			HashMap<Integer, DecoyAS> purgedAS, boolean onlyTranist,
+			boolean saneChina) {
 		this.decoyCount = count;
+		this.liveAS = liveAS;
+		this.purgedAS = purgedAS;
+		this.onlyTransit = onlyTransit;
+		this.saneChina = saneChina;
 	}
 
-	public Set<Integer> seed(HashMap<Integer, DecoyAS> liveAS, HashMap<Integer, DecoyAS> purgedAS, boolean onlyTransit,
-			boolean saneChina) {
+	public Set<Integer> seedDecoys() {
 		Random rng = new Random();
 
 		/*
