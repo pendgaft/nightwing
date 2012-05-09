@@ -33,9 +33,9 @@ public class Rings implements Seeder{
 		}
 	}
 
-	public void runTests() throws IOException {
-		HashMap<Integer, HashSet<AS>> rings = this.computeRingSize();
-		this.computeOutOfShadowSizes(rings);
+	public void runTests(String country) throws IOException {
+		HashMap<Integer, HashSet<AS>> rings = this.computeRingSize(country);
+		this.computeOutOfShadowSizes(rings, country);
 	}
 
 	public void setupSeeder(int depth) {
@@ -46,8 +46,9 @@ public class Rings implements Seeder{
 		/*
 		 * Populates every ring
 		 */
-		for (int currDepth = 1; currDepth < depth; currDepth++) {
+		for (int currDepth = 1; currDepth <= depth; currDepth++) {
 			visited.addAll(previous);
+			System.out.println("Size of previous: " + previous.size());
 			previous = this.computeRingMembers(previous, visited);
 		}
 
@@ -60,6 +61,15 @@ public class Rings implements Seeder{
 	public void setDecoySeedSize(int decoySize){
 		this.size = decoySize;
 	}
+	
+	public int setDecoySeedSize(double fraction){
+		this.size = (int) Math.ceil(this.seederSet.size() * fraction);
+		/* Just in case screwyness of size * 1.0 = (size - 1) happens again */
+		if(fraction == 1.0) {
+			this.size = this.seederSet.size();
+		}
+		return this.size;
+	}
 
 	public Set<Integer> seedDecoys() {
 		if (this.seederSet == null) {
@@ -67,6 +77,8 @@ public class Rings implements Seeder{
 		}
 		
 		if(size > this.seederSet.size()){
+			System.out.println("WARNING: seedDecoys() returning null -- size=" + size + 
+					" >  seederSet.size()=" + this.seederSet.size()); 
 			return null;
 		}
 
@@ -74,8 +86,18 @@ public class Rings implements Seeder{
 			tAS.resetDecoyRouter();
 		}
 
-		Set<Integer> retSet = new HashSet<Integer>();
-		Random rng = new Random();
+		Set<Integer> retSet;
+		if(size < this.seederSet.size()) {
+			List<Integer> randomList = new LinkedList<Integer>(this.seederSet.keySet());
+			Collections.shuffle(randomList);
+			retSet = new HashSet<Integer>(randomList.subList(0, size));
+		} else {
+			retSet = new HashSet<Integer>(this.seederSet.keySet());
+		}
+		for(Integer as : retSet) {
+			this.seederSet.get(as).toggleDecoyRouter();
+		}
+		/*Random rng = new Random();
 		while (retSet.size() < size) {
 			int attempt = rng.nextInt(40000);
 			if (this.seederSet.containsKey(attempt)
@@ -83,12 +105,12 @@ public class Rings implements Seeder{
 				retSet.add(attempt);
 				this.seederSet.get(attempt).toggleDecoyRouter();
 			}
-		}
+		}*/
 		
 		return retSet;
 	}
 
-	private HashMap<Integer, HashSet<AS>> computeRingSize() throws IOException {
+	private HashMap<Integer, HashSet<AS>> computeRingSize(String country) throws IOException {
 
 		long startTime = System.currentTimeMillis();
 		System.out.println("starting ring compuatation.");
@@ -112,7 +134,7 @@ public class Rings implements Seeder{
 		}
 
 		BufferedWriter outBuff = new BufferedWriter(new FileWriter(
-				"logs/ringSize.csv"));
+				"logs/" + country + "-ringSize.csv"));
 		for (int depth = 1; depth < 20; depth++) {
 			outBuff.write("" + depth + "," + rings.get(depth).size() + "\n");
 		}
@@ -134,6 +156,9 @@ public class Rings implements Seeder{
 			considerSet.addAll(tAS.getCustomers());
 			considerSet.addAll(tAS.getPeers());
 			considerSet.addAll(tAS.getProviders());
+			
+			//System.out.println("AS " + tAS.getASN() + ": customers=" + tAS.getCustomerCount() + 
+			//		" peers= "  + tAS.getPeers().size() + " providers=" + tAS.getProviders().size());
 
 			considerSet.removeAll(visited);
 			HashSet<AS> nonTransitSet = new HashSet<AS>();
@@ -150,7 +175,7 @@ public class Rings implements Seeder{
 		return nextRing;
 	}
 
-	private void computeOutOfShadowSizes(HashMap<Integer, HashSet<AS>> rings)
+	private void computeOutOfShadowSizes(HashMap<Integer, HashSet<AS>> rings, String country)
 			throws IOException {
 		HashMap<Integer, Double> ooShadowSizes = new HashMap<Integer, Double>();
 
@@ -164,7 +189,7 @@ public class Rings implements Seeder{
 		}
 
 		BufferedWriter outBuff = new BufferedWriter(new FileWriter(
-				"logs/ooShadow.csv"));
+				"logs/" + country + "-ooShadow.csv"));
 		for (int counter = 1; counter < MAX_DEPTH; counter++) {
 			outBuff.write("" + counter + "," + ooShadowSizes.get(counter)
 					+ "\n");

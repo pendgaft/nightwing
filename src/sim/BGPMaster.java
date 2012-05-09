@@ -21,12 +21,12 @@ public class BGPMaster {
 	private static final int WORK_BLOCK_SIZE = 40;
 
 	@SuppressWarnings("unchecked")
-	public static HashMap<Integer, DecoyAS>[] buildBGPConnection(int chinaAvoidanceSize) throws IOException {
+	public static HashMap<Integer, DecoyAS>[] buildBGPConnection(int chinaAvoidanceSize, String countryFile) throws IOException {
 
 		/*
 		 * Build AS map
 		 */
-		HashMap<Integer, DecoyAS> usefulASMap = ASTopoParser.doNetworkBuild();
+		HashMap<Integer, DecoyAS> usefulASMap = ASTopoParser.doNetworkBuild(countryFile);
 		HashMap<Integer, DecoyAS> prunedASMap = ASTopoParser.doNetworkPrune(usefulASMap);
 
 		/*

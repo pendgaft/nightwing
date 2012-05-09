@@ -17,8 +17,9 @@ public class ASTopoParser {
 		 */
 	}
 
-	public static HashMap<Integer, DecoyAS> doNetworkBuild() throws IOException {
-		HashMap<Integer, DecoyAS> asMap = ASTopoParser.parseFile(ASTopoParser.AS_REL_FILE, "china-as.txt");
+	public static HashMap<Integer, DecoyAS> doNetworkBuild(String countryFile) throws IOException {
+		//HashMap<Integer, DecoyAS> asMap = ASTopoParser.parseFile(ASTopoParser.AS_REL_FILE, "china-as.txt");
+		HashMap<Integer, DecoyAS> asMap = ASTopoParser.parseFile(ASTopoParser.AS_REL_FILE, countryFile);
 		System.out.println("Raw topo size is: " + asMap.size());
 		ASTopoParser.parseIPScoreFile(asMap);
 

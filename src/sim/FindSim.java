@@ -18,8 +18,8 @@ public class FindSim {
 	private HashMap<Integer, List<Integer>> cleanResultMap;
 	private HashMap<Integer, List<Integer>> falseResultMap;
 
-	private static final int RUN_COUNT = 1;
-	private static final boolean ONLY_TRANSIT = true;
+	private static int RUN_COUNT = 1;
+	private static boolean ONLY_TRANSIT = true;
 	private static final boolean ECONOMIC_DEPLOY = true;
 	private static final boolean SCORE_BY_IP = false;
 
@@ -41,7 +41,7 @@ public class FindSim {
 		}
 	}
 
-	public void run() {
+	public void run(String logFilename) throws IOException {
 		long fullTimeStart = System.currentTimeMillis();
 		System.out.println("Starting decoy hunting sim.");
 
@@ -49,45 +49,74 @@ public class FindSim {
 		// int decoyCount = (int) Math.round(Math.pow(2, expo));
 		// this.runOneDeployLevel(decoyCount, FindSim.ONLY_TRANSIT);
 		// }
-
-		for (int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount + 250) {
+		
+		RUN_COUNT = 50;
+		ONLY_TRANSIT = false;
+		
+		List<Integer> decoyCounts = new LinkedList<Integer>();
+		for (int decoyCount = 1; decoyCount < 4100; decoyCount = decoyCount + 500) {
 			DecoySeeder seeder = new DecoySeeder(decoyCount, this.activeMap,
 					this.purgedMap, FindSim.ONLY_TRANSIT,
 					FindSim.ECONOMIC_DEPLOY);
+			decoyCounts.add(decoyCount);
 			this.runOneDeployLevel(decoyCount, seeder);
 		}
 
 		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
 		System.out.println("Full run took: " + fullTimeStart + " mins ");
+		
+		this.printResults(logFilename, decoyCounts);
 	}
 
-	public void runTargeted() {
+	public void runTargeted(boolean seedSingle, String logFilename) throws IOException {
 		long fullTimeStart = System.currentTimeMillis();
 		System.out.println("Starting decoy hunting sim.");
+		
+		RUN_COUNT = 1;
+		ONLY_TRANSIT = true;
+		
+		List<Integer> decoyCounts = new LinkedList<Integer>();
 		LargeASDecoyPlacer seeder = new LargeASDecoyPlacer(this.activeMap);
 		for (int size = 0; size < 100; size++) {
 			this.dirtyResultMap.put(size, new LinkedList<Integer>());
 			this.cleanResultMap.put(size, new LinkedList<Integer>());
 			this.falseResultMap.put(size, new LinkedList<Integer>());
-			// Set<Integer> groundTruth = seeder.seedSingleDecoyBySize(size);
-			Set<Integer> groundTruth = seeder.seedNLargest(size);
+			
+			decoyCounts.add(size);
+			
+			Set<Integer> groundTruth;
+			if(seedSingle) {
+				groundTruth = seeder.seedSingleDecoyBySize(size);
+			} else {
+				groundTruth = seeder.seedNLargest(size);
+			}
 			this.probe(size, groundTruth);
 		}
 		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
 		System.out.println("Full run took: " + fullTimeStart + " mins ");
+		
+		this.printResults(logFilename, decoyCounts);
 	}
 
-	public void runRings() {
+	public void runRings(String country) throws IOException {
 		long fullTimeStart = System.currentTimeMillis();
 		System.out.println("Starting decoy hunting sim.");
+		
+		RUN_COUNT = 5;
+		
 		Rings ringMaker = new Rings(this.activeMap, this.purgedMap);
+		List<Integer> decoyCounts = new LinkedList<Integer>();
 		ringMaker.setupSeeder(2);
-		for (int size = 100; size < 2000; size = size + 100) {
-			ringMaker.setDecoySeedSize(size);
-			this.runOneDeployLevel(size, ringMaker);
+		//for (int size = 100; size < 2000; size = size + 100) {
+		for(double size = 0.1; size <= 1.0; size += 0.1) {
+			int ringSize = ringMaker.setDecoySeedSize(size);
+			decoyCounts.add(ringSize);
+			this.runOneDeployLevel(ringSize, ringMaker);
 		}
 		fullTimeStart = (System.currentTimeMillis() - fullTimeStart) / 60000;
 		System.out.println("Full run took: " + fullTimeStart + " mins ");
+		
+		this.printResults(country + "-decoy-hunt-rings.csv", decoyCounts);
 	}
 
 	public void runActive(int avoidSize) throws IOException {
@@ -134,17 +163,18 @@ public class FindSim {
 		outBuff.close();
 	}
 
-	public void printResults() throws IOException {
+	public void printResults(String filename, List<Integer> decoyCounts) throws IOException {
 		BufferedWriter outBuff = new BufferedWriter(new FileWriter(
-				FindSim.LOG_DIR + "decoy-hunt.csv"));
+				FindSim.LOG_DIR + filename));
 		int totalASN = this.activeMap.size() + this.purgedMap.size();
 		outBuff.write("Decoy hunting sim - full size is," + totalASN + "\n");
 		outBuff.write("deploy size,mean dirty,std dev dirty,median dirty,mean clean,std dev clean,median clean,mean false, std dev false, median false\n");
 		// for (int expo = 0; expo < 11; expo++) {
 		// for(int decoyCount = 1500; decoyCount < 4100; decoyCount = decoyCount
 		// + 250){
-		for (int decoyCount = 0; decoyCount < 100; decoyCount++) {
-			// int decoyCount = (int) Math.round(Math.pow(2, expo));
+		//for (int decoyCount = 0; decoyCount < 100; decoyCount++) {
+		for(int i = 0; i < decoyCounts.size(); i++) {
+			int decoyCount = decoyCounts.get(i);
 			List<Integer> vals = this.dirtyResultMap.get(decoyCount);
 			double meanD = Stats.mean(vals);
 			double stdD = Stats.stdDev(vals);
@@ -162,6 +192,17 @@ public class FindSim {
 					+ meanF + "," + stdF + "," + medF + "\n");
 		}
 		outBuff.close();
+		
+		/*
+		 * Clear results for any future runs
+		 */
+		this.clearResults();
+	}
+	
+	public void clearResults() {
+		this.dirtyResultMap.clear();
+		this.cleanResultMap.clear();
+		this.falseResultMap.clear();
 	}
 
 	private void runOneDeployLevel(int size, Seeder decoySeeder) {
@@ -241,6 +282,8 @@ public class FindSim {
 		HashSet<Integer> cleanSet = new HashSet<Integer>();
 		HashSet<Integer> dirtySet = new HashSet<Integer>();
 		Set<BGPPath> tempPathSet = new HashSet<BGPPath>();
+		
+		System.out.println("Starting probe of size " + stopPoint);
 
 		int noDest = 0;
 		long ipScore = 0;

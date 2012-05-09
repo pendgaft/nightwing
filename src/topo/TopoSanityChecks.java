@@ -12,9 +12,11 @@ public class TopoSanityChecks {
 	 */
 	public static void main(String[] args) throws IOException {
 
-		HashMap<Integer, DecoyAS> thisYear = ASTopoParser.parseFile("as-rel.txt", "china-as.txt");
+		//HashMap<Integer, DecoyAS> thisYear = ASTopoParser.parseFile("as-rel.txt", "china-as.txt");
+		HashMap<Integer, DecoyAS> thisYear = ASTopoParser.parseFile("as-rel.txt", "iran-as.txt");
 		HashMap<Integer, DecoyAS> thisYearPurge = ASTopoParser.doNetworkPrune(thisYear);
-		HashMap<Integer, DecoyAS> lastYear = ASTopoParser.parseFile("as-rel-2010.txt", "china-as.txt");
+		//HashMap<Integer, DecoyAS> lastYear = ASTopoParser.parseFile("as-rel-2010.txt", "china-as.txt");
+		HashMap<Integer, DecoyAS> lastYear = ASTopoParser.parseFile("as-rel-2010.txt", "iran-as.txt");
 		HashMap<Integer, DecoyAS> lastYearPurge = ASTopoParser.doNetworkPrune(lastYear);
 
 

@@ -25,8 +25,10 @@ public class Nightwing {
 		 */
 		int mode = 0;
 		int avoidSize = 0;
+		String country = "china";
 		if (args[0].equalsIgnoreCase(Nightwing.FIND_STRING)) {
 			mode = Nightwing.FIND_MODE;
+			country = args[1];
 		} else if (args[0].equalsIgnoreCase(Nightwing.REPEAT_STRING)) {
 			mode = Nightwing.REPEAT_MODE;
 		} else if (args[0].equalsIgnoreCase(Nightwing.ASYM_STRING)) {
@@ -40,25 +42,26 @@ public class Nightwing {
 			System.out.println("bad mode: " + args[0]);
 			System.exit(-1);
 		}
-		System.out.println("Mode: " + args[0] + " looks good, building topo.");
+		System.out.println("Mode: " + args[0] + " on country " + country + " looks good, building topo.");
 
-		/*
-		 * Build the topology, and store in Maps
-		 */
-		HashMap<Integer, DecoyAS>[] topoArray = BGPMaster.buildBGPConnection(avoidSize);
+		HashMap<Integer, DecoyAS>[] topoArray = BGPMaster.buildBGPConnection(avoidSize, country + "-as.txt");		
 		HashMap<Integer, DecoyAS> liveTopo = topoArray[0];
 		HashMap<Integer, DecoyAS> prunedTopo = topoArray[1];
 		System.out.println("Topo built and BGP converged.");
-
+			
 		/*
 		 * Run the correct mode
 		 */
 		if (mode == Nightwing.FIND_MODE) {
 			FindSim simDriver = new FindSim(liveTopo, prunedTopo);
-			//simDriver.run();
-			//simDriver.runTargeted();
-			simDriver.runRings();
-			simDriver.printResults();
+            simDriver.run(country + "-decoy-hunt-random.csv");
+            simDriver.runTargeted(true, country + "-decoy-hunt-single.csv");
+            simDriver.runTargeted(false, country + "-decoy-hunt-nlargest.csv");
+            
+			Rings ringDriver = new Rings(liveTopo, prunedTopo);
+			ringDriver.runTests(country);
+			simDriver.runRings(country);
+			//simDriver.printResults();
 		} else if (mode == Nightwing.REPEAT_MODE) {
 			System.out.println("NOT IMPLEMENTED YET");
 			System.exit(-2);
@@ -70,7 +73,7 @@ public class Nightwing {
 			simDriver.runActive(avoidSize);
 		} else if (mode == Nightwing.RING_MODE) {
 			Rings simDriver = new Rings(liveTopo, prunedTopo);
-			simDriver.runTests();
+			simDriver.runTests(country);
 		} else {
 			System.out.println("mode fucked up, wtf.... " + mode);
 			System.exit(-2);
