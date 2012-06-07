@@ -35,7 +35,7 @@ public class FindSim {
 		this.falseResultMap = new HashMap<Integer, List<Integer>>();
 		this.chinaAS = new HashSet<DecoyAS>();
 		for (DecoyAS tAS : activeMap.values()) {
-			if (tAS.isChinaAS()) {
+			if (tAS.isWardenAS()) {
 				this.chinaAS.add(tAS);
 			}
 		}

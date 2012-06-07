@@ -58,7 +58,7 @@ public class LargeASDecoyPlacer {
 			if(considered.contains(tAS.getASN())){
 				continue;
 			}
-			if(tAS.isChinaAS()){
+			if(tAS.isWardenAS()){
 				continue;
 			}
 			

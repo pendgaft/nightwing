@@ -39,10 +39,10 @@ public class BGPMaster {
 		 * Give everyone their self network
 		 */
 		for (AS tAS : usefulASMap.values()) {
-			if (tAS.isChinaAS()) {
+			if (tAS.isWardenAS()) {
 				BGPPath tempPath = new BGPPath(tAS.getASN());
 				for(int tAvoid: avoidSet){
-					tempPath.appendASToPath(tAvoid);
+					tempPath.prependASToPath(tAvoid);
 				}
 			} else {
 				tAS.advPath(new BGPPath(tAS.getASN()));

@@ -1,10 +1,8 @@
-package sim;
+package decoy;
 
 import java.util.*;
 import java.io.*;
 
-import decoy.DecoyAS;
-import decoy.Seeder;
 import topo.AS;
 import topo.BGPPath;
 
@@ -27,7 +25,7 @@ public class Rings implements Seeder{
 		this.chinaASes = new HashSet<AS>();
 
 		for (AS tAS : this.activeMap.values()) {
-			if (tAS.isChinaAS()) {
+			if (tAS.isWardenAS()) {
 				this.chinaASes.add(tAS);
 			}
 		}
@@ -207,7 +205,7 @@ public class Rings implements Seeder{
 			/*
 			 * don't consider china ASes and those in the ring
 			 */
-			if (tDest.isChinaAS() || ring.contains(tDest)) {
+			if (tDest.isWardenAS() || ring.contains(tDest)) {
 				continue;
 			}
 

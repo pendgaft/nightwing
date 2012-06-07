@@ -4,6 +4,7 @@ import java.util.*;
 import java.io.*;
 
 import decoy.DecoyAS;
+import decoy.Rings;
 
 public class Nightwing {
 

@@ -3,19 +3,19 @@ package topo;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/*
- * Notes to turn into docs
+/**
+ * Class that does two things. First, it deals with the topology bookkeeping the
+ * simulator needs to do. Second, it handles BGP processing. So as you might
+ * imagine, this is kinda complex and fragile, in general, if your name isn't
+ * Max, DON'T TOUCH THIS!!!!
  * 
- * This deals with BGP side
- * and in the future the IP
+ * @author pendgaft
  * 
- * The decoy side in handled by decoryAS, which
- * should nest this class
  */
-public class AS {
+public abstract class AS {
 
 	private int asn;
-	private boolean chinaAS;
+	private boolean wardenAS;
 	private Set<AS> customers;
 	private Set<AS> peers;
 	private Set<AS> providers;
@@ -35,7 +35,7 @@ public class AS {
 
 	public AS(int myASN) {
 		this.asn = myASN;
-		this.chinaAS = false;
+		this.wardenAS = false;
 		this.customers = new HashSet<AS>();
 		this.peers = new HashSet<AS>();
 		this.providers = new HashSet<AS>();
@@ -48,23 +48,51 @@ public class AS {
 		this.incUpdateQueue = new LinkedBlockingQueue<BGPUpdate>();
 		this.dirtyDest = new HashSet<Integer>();
 	}
-	
-	public void setIPCount(int ipCount){
+
+	/**
+	 * Sets the ip count, as it is not parsed at the point of AS object
+	 * creation.
+	 * 
+	 * @param ipCount
+	 *            - the number of distinct IP addresses in this AS
+	 */
+	public void setIPCount(int ipCount) {
 		this.numberOfIPs = ipCount;
 	}
-	
-	public int getIPCount(){
+
+	/**
+	 * Fetches the number of IP address that reside in this AS.
+	 * 
+	 * @return - the number of distinct IP addresses in this AS
+	 */
+	public int getIPCount() {
 		return this.numberOfIPs;
 	}
-	
-	public static HashSet<Integer> buildASNSet(HashSet<AS> asSet){
+
+	/**
+	 * Static function that builds a Set of ASNs from a set of AS objects
+	 * 
+	 * @param asSet
+	 *            - a set of AS objects
+	 * @return - a set of ASNs, one from each AS in the supplied set
+	 */
+	public static HashSet<Integer> buildASNSet(HashSet<AS> asSet) {
 		HashSet<Integer> outSet = new HashSet<Integer>();
-		for(AS tAS: asSet){
+		for (AS tAS : asSet) {
 			outSet.add(tAS.getASN());
 		}
 		return outSet;
 	}
 
+	/**
+	 * Method that adds a relationship between two ASes. This function ensures
+	 * symm and is safe to accidently be called twice.
+	 * 
+	 * @param otherAS
+	 *            - the AS this AS has a relationship with
+	 * @param myRelationToThem
+	 *            -
+	 */
 	public void addRelation(AS otherAS, int myRelationToThem) {
 		if (myRelationToThem == AS.PROIVDER_CODE) {
 			this.customers.add(otherAS);
@@ -98,6 +126,14 @@ public class AS {
 		}
 	}
 
+	/**
+	 * Public interface to force the router to handle one message in it's update
+	 * queue. This IS safe if the update queue is empty (the function) returns
+	 * immediately. This handles the removal of routes, calculation of best
+	 * paths, tolerates the loss of all routes, etc. It marks routes as dirty,
+	 * but does not send advertisements, as that is handled at the time of MRAI
+	 * expiration.
+	 */
 	public void handleAdvertisement() {
 		BGPUpdate nextUpdate = this.incUpdateQueue.poll();
 		if (nextUpdate == null) {
@@ -108,7 +144,7 @@ public class AS {
 		 * Fetch some fields in the correct form
 		 */
 		int advPeer, dest;
-		if (nextUpdate.isWithdrawl()) {
+		if (nextUpdate.isWithdrawal()) {
 			advPeer = nextUpdate.getWithdrawer().asn;
 			dest = nextUpdate.getWithdrawnDest();
 		} else {
@@ -158,7 +194,7 @@ public class AS {
 		/*
 		 * If it is a loop don't add it to ribs
 		 */
-		if ((!nextUpdate.isWithdrawl()) && (!nextUpdate.getPath().containsLoop(this.asn))) {
+		if ((!nextUpdate.isWithdrawal()) && (!nextUpdate.getPath().containsLoop(this.asn))) {
 			advRibList.add(nextUpdate.getPath());
 			destRibList.add(nextUpdate.getPath());
 		}
@@ -166,6 +202,10 @@ public class AS {
 		recalcBestPath(dest);
 	}
 
+	/**
+	 * Currently exposed interface which triggers an expiration of THIS ROUTER'S
+	 * MRAI timer, resulting in updates being sent to this router's peers.
+	 */
 	public void mraiExpire() {
 		for (int tDest : this.dirtyDest) {
 			this.sendUpdate(tDest);
@@ -173,26 +213,68 @@ public class AS {
 		this.dirtyDest.clear();
 	}
 
+	/**
+	 * Public interface to be used by OTHER BGP Speakers to advertise a change
+	 * in a route to a destination.
+	 * 
+	 * @param incRoute
+	 *            - the route being advertised
+	 */
 	public void advPath(BGPPath incPath) {
 		this.incUpdateQueue.add(new BGPUpdate(incPath));
 	}
 
+	/**
+	 * Public interface to be used by OTHER BGPSpeakers to withdraw a route to
+	 * this router.
+	 * 
+	 * @param peer
+	 *            - the peer sending the withdrawl
+	 * @param dest
+	 *            - the destination of the route withdrawn
+	 */
 	public void withdrawPath(AS peer, int dest) {
 		this.incUpdateQueue.add(new BGPUpdate(dest, peer));
 	}
 
+	/**
+	 * Predicate to test if the incoming work queue is empty or not, used to
+	 * accelerate the simulation.
+	 * 
+	 * @return true if items are in the incoming work queue, false otherwise
+	 */
 	public boolean hasWorkToDo() {
 		return !this.incUpdateQueue.isEmpty();
 	}
 
+	/**
+	 * Predicate to test if this speaker needs to send advertisements when the
+	 * MRAI fires.
+	 * 
+	 * @return - true if there are advertisements that need to be send, false
+	 *         otherwise
+	 */
 	public boolean hasDirtyPrefixes() {
 		return !this.dirtyDest.isEmpty();
 	}
 
+	/**
+	 * Fetches the number of bgp updates that have yet to be processed.
+	 * 
+	 * @return the number of pending BGP messages
+	 */
 	public long getPendingMessageCount() {
 		return (long) this.incUpdateQueue.size();
 	}
 
+	/**
+	 * Function that forces the router to recalculate what our current valid and
+	 * best path is. This should be called when a route for the given
+	 * destination has changed in any way.
+	 * 
+	 * @param dest
+	 *            - the destination network that has had a route change
+	 */
 	private void recalcBestPath(int dest) {
 		boolean changed;
 
@@ -211,9 +293,13 @@ public class AS {
 		}
 	}
 
-	/*
-	 * Actual path selection, abreviated: relationship => path len => tie
-	 * breaker
+	/**
+	 * Method that handles actual BGP path selection. Slightly abbreviated, does
+	 * AS relation, path length, then tie break.
+	 * 
+	 * @param possList
+	 *            - the possible valid routes
+	 * @return - the "best" of the valid routes by usual BGP metrics
 	 */
 	private BGPPath pathSelection(List<BGPPath> possList) {
 		BGPPath currentBest = null;
@@ -245,6 +331,14 @@ public class AS {
 		return currentBest;
 	}
 
+	/**
+	 * Internal function to deal with the sending of advertisements or explicit
+	 * withdrawals of routes. Does valley free routing.
+	 * 
+	 * @param dest
+	 *            - the destination of the route we need to advertise a change
+	 *            in
+	 */
 	private void sendUpdate(int dest) {
 		Set<AS> prevAdvedTo = this.adjOutRib.get(dest);
 		Set<AS> newAdvTo = new HashSet<AS>();
@@ -252,7 +346,7 @@ public class AS {
 
 		if (pathOfMerit != null) {
 			BGPPath pathToAdv = pathOfMerit.deepCopy();
-			pathToAdv.appendASToPath(this.asn);
+			pathToAdv.prependASToPath(this.asn);
 			for (AS tCust : this.customers) {
 				tCust.advPath(pathToAdv);
 				newAdvTo.add(tCust);
@@ -277,6 +371,14 @@ public class AS {
 		}
 	}
 
+	/**
+	 * Method to return the code for the relationship between this AS and the
+	 * one specified by the ASN.
+	 * 
+	 * @param asn
+	 *            - the ASN of the other AS
+	 * @return - a constant matching the relationship
+	 */
 	private int getRel(int asn) {
 		for (AS tAS : this.providers) {
 			if (tAS.getASN() == asn) {
@@ -298,15 +400,33 @@ public class AS {
 			return 2;
 		}
 
-		System.err.println("asked for relation on non-adj/non-self asn, depending on sim "
+		throw new RuntimeException("asked for relation on non-adj/non-self asn, depending on sim "
 				+ "this might be expected, if you're not, you should prob restart this sim...!");
-		return 2;
 	}
 
+	/**
+	 * Fetches the currently installed best path to the destination.
+	 * 
+	 * @param dest
+	 *            - the ASN of the destination network
+	 * @return - the current best path, or null if we have none
+	 */
 	public BGPPath getPath(int dest) {
 		return this.locRib.get(dest);
 	}
 
+	/**
+	 * Fetches what would be the currently installed best path for an AS that is
+	 * NOT part of the current topology. In otherwords this fetches a path for
+	 * an AS that has been pruned. This is done by supplying providers for that
+	 * AS that have not been pruned, and comparing routes.
+	 * 
+	 * @param hookASNs
+	 *            - a list of ASNs of AS that are providers for the pruned AS,
+	 *            these AS MUST exist in the current topology
+	 * @return - what the currently installed path would be for a destination
+	 *         based off of the list of providers
+	 */
 	public BGPPath getPathToPurged(List<Integer> hookASNs) {
 		List<BGPPath> listPossPaths = new LinkedList<BGPPath>();
 		for (Integer tHook : hookASNs) {
@@ -315,6 +435,14 @@ public class AS {
 		return this.pathSelection(listPossPaths);
 	}
 
+	/**
+	 * Fetches all currently valid BGP paths to the destination AS.
+	 * 
+	 * @param dest
+	 *            - the ASN of the destination AS
+	 * @return - a list of all paths to the destination, an empty list if we
+	 *         have none
+	 */
 	public List<BGPPath> getAllPathsTo(int dest) {
 		if (!this.inRib.containsKey(dest)) {
 			return new LinkedList<BGPPath>();
@@ -334,48 +462,92 @@ public class AS {
 		return providers;
 	}
 
+	public String toString() {
+		return "AS: " + this.asn;
+	}
+
+	/**
+	 * Simple hash code based off of asn
+	 */
 	public int hashCode() {
 		return this.asn;
 	}
 
+	/**
+	 * Simple equality test done based off of ASN
+	 */
 	public boolean equals(Object rhs) {
 		AS rhsAS = (AS) rhs;
 		return this.asn == rhsAS.asn;
 	}
 
+	/**
+	 * Fetches the ASN of this AS.
+	 * 
+	 * @return - the AS's ASN
+	 */
 	public int getASN() {
 		return this.asn;
 	}
 
+	/**
+	 * Fetches the degree of this AS
+	 * 
+	 * @return - the degree of this AS in the current topology
+	 */
 	public int getDegree() {
 		return this.customers.size() + this.peers.size() + this.providers.size();
 	}
 
+	/**
+	 * Fetches the number of ASes this AS has as a customer.
+	 * 
+	 * @return - the number of customers this AS has in the current topology
+	 */
 	public int getCustomerCount() {
 		return this.customers.size();
 	}
 
-	public void toggleChinaAS() {
-		this.chinaAS = true;
+	/**
+	 * Function that marks this AS as part of the wardern
+	 */
+	public void toggleWardenAS() {
+		this.wardenAS = true;
 	}
 
-	public boolean isChinaAS() {
-		return this.chinaAS;
+	/**
+	 * Predicate to test if this AS is part of the warden.
+	 * 
+	 * @return - true if the AS is part of the warden, false otherwise
+	 */
+	public boolean isWardenAS() {
+		return this.wardenAS;
 	}
 
-	public boolean connectedToChinaAS() {
+	/**
+	 * Predicate to test if this AS is connected to the warden. An AS that is
+	 * part of the warden is of course trivially connected to the warden
+	 * 
+	 * @return - true if this AS is part of the warden or is directly connected
+	 *         to it
+	 */
+	public boolean connectedToWarden() {
+		if (this.isWardenAS()) {
+			return true;
+		}
+
 		for (AS tAS : this.customers) {
-			if (tAS.isChinaAS()) {
+			if (tAS.isWardenAS()) {
 				return true;
 			}
 		}
 		for (AS tAS : this.providers) {
-			if (tAS.isChinaAS()) {
+			if (tAS.isWardenAS()) {
 				return true;
 			}
 		}
 		for (AS tAS : this.peers) {
-			if (tAS.isChinaAS()) {
+			if (tAS.isWardenAS()) {
 				return true;
 			}
 		}

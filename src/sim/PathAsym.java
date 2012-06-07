@@ -22,7 +22,7 @@ public class PathAsym {
 
 		this.chinaAS = new HashSet<DecoyAS>();
 		for (DecoyAS tAS : this.activeMap.values()) {
-			if (tAS.isChinaAS()) {
+			if (tAS.isWardenAS()) {
 				chinaAS.add(tAS);
 			}
 		}

@@ -2,24 +2,65 @@ package decoy;
 
 import java.util.*;
 
-import topo.AS;
+/**
+ * Class that implements a random AS based deployment strategy. Basically, this
+ * class implements the deployment strategy put forward in Cirripede (well, one
+ * of them at least).
+ * 
+ * @author pendgaft
+ * 
+ */
+public class DecoySeeder implements Seeder {
 
-public class DecoySeeder implements Seeder{
-
+	/**
+	 * The number of decoys we wish to deploy
+	 */
 	private int decoyCount;
-	private HashMap<Integer, DecoyAS> liveAS;
-	private HashMap<Integer, DecoyAS> purgedAS;
-	private boolean onlyTransit;
-	private boolean saneChina;
 
-	public DecoySeeder(int count, HashMap<Integer, DecoyAS> liveAS,
-			HashMap<Integer, DecoyAS> purgedAS, boolean onlyTranist,
-			boolean saneChina) {
+	/**
+	 * Map of ASes that are part of our actively router topology.
+	 */
+	private HashMap<Integer, DecoyAS> liveAS;
+
+	/**
+	 * Map of ASes that have been purged from our routed topology.
+	 */
+	private HashMap<Integer, DecoyAS> purgedAS;
+
+	/**
+	 * Flag for ensuring that only transit ASes get selected to deploy decoy
+	 * routers (sane strategy for the decoy router deployer).
+	 */
+	private boolean onlyTransit;
+
+	/**
+	 * Flag for removing ASes directly connected to the warden from
+	 * consideration. This represents a business/policy decision on their part.
+	 */
+	private boolean noWardenNeighbor;
+
+	/**
+	 * Constructor that sets up the decoy seeder for functionality
+	 * 
+	 * @param count
+	 *            - The number of decoys we wish to deploy
+	 * @param liveAS
+	 *            - Map of ASes that are part of our actively router topology.
+	 * @param purgedAS
+	 *            - Map of ASes that have been purged from our routed topology.
+	 * @param onlyTranist
+	 *            - Flag for ensuring that only transit ASes get selected
+	 * @param noWardenNeighbor
+	 *            - Flag for removing ASes directly connected to the warden from
+	 *            consideration.
+	 */
+	public DecoySeeder(int count, HashMap<Integer, DecoyAS> liveAS, HashMap<Integer, DecoyAS> purgedAS,
+			boolean onlyTranist, boolean noWardenNeighbor) {
 		this.decoyCount = count;
 		this.liveAS = liveAS;
 		this.purgedAS = purgedAS;
-		this.onlyTransit = onlyTransit;
-		this.saneChina = saneChina;
+		this.onlyTransit = onlyTranist;
+		this.noWardenNeighbor = noWardenNeighbor;
 	}
 
 	public Set<Integer> seedDecoys() {
@@ -71,7 +112,7 @@ public class DecoySeeder implements Seeder{
 			/*
 			 * China doesn't deploy DRs....
 			 */
-			if (focus.isChinaAS()) {
+			if (focus.isWardenAS()) {
 				continue;
 			}
 
@@ -88,27 +129,8 @@ public class DecoySeeder implements Seeder{
 			 * abutts China as a decoy, as they have a STRONG economic incentive
 			 * to not do such
 			 */
-			if (saneChina) {
-				boolean adjChina = false;
-				for (AS tAS : focus.getProviders()) {
-					if (tAS.isChinaAS()) {
-						adjChina = true;
-					}
-				}
-				for (AS tAS : focus.getPeers()) {
-					if (tAS.isChinaAS()) {
-						adjChina = true;
-					}
-				}
-				for (AS tAS : focus.getCustomers()) {
-					if (tAS.isChinaAS()) {
-						adjChina = true;
-					}
-				}
-
-				if (adjChina) {
-					continue;
-				}
+			if (noWardenNeighbor && focus.connectedToWarden()) {
+				continue;
 			}
 
 			/*
