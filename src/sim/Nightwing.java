@@ -56,8 +56,8 @@ public class Nightwing {
 		if (mode == Nightwing.FIND_MODE) {
 			FindSim simDriver = new FindSim(liveTopo, prunedTopo);
             simDriver.run(country + "-decoy-hunt-random.csv");
-            simDriver.runTargeted(true, country + "-decoy-hunt-single.csv");
-            simDriver.runTargeted(false, country + "-decoy-hunt-nlargest.csv");
+            simDriver.runLargeASOnlyTests(true, country + "-decoy-hunt-single.csv");
+            simDriver.runLargeASOnlyTests(false, country + "-decoy-hunt-nlargest.csv");
             
 			Rings ringDriver = new Rings(liveTopo, prunedTopo);
 			ringDriver.runTests(country);
