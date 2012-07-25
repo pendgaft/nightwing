@@ -18,6 +18,8 @@ public class Nightwing {
 	private static final int ACTIVE_MODE = 4;
 	private static final String RING_STRING = "ring";
 	private static final int RING_MODE = 5;
+	private static final int ATTACK_FLOW_MODE = 6;
+	private static final String ATTACK_FLOW_STRING = "aflow";
 
 	public static void main(String[] args) throws IOException {
 
@@ -39,6 +41,8 @@ public class Nightwing {
 			avoidSize = Integer.parseInt(args[1]);
 		} else if (args[0].equalsIgnoreCase(Nightwing.RING_STRING)) {
 			mode = Nightwing.RING_MODE;
+		} else if (args[0].equalsIgnoreCase(Nightwing.ATTACK_FLOW_STRING)){
+			mode = Nightwing.ATTACK_FLOW_MODE;
 		} else {
 			System.out.println("bad mode: " + args[0]);
 			System.exit(-1);
@@ -75,7 +79,14 @@ public class Nightwing {
 		} else if (mode == Nightwing.RING_MODE) {
 			Rings simDriver = new Rings(liveTopo, prunedTopo);
 			simDriver.runTests(country);
-		} else {
+		} else if(mode == Nightwing.ATTACK_FLOW_MODE){
+			AttackFlows simDriver = new AttackFlows(liveTopo, prunedTopo);
+			for(int counter = 80000; counter <= 160000; counter += 20000){
+				simDriver.runExperiment("asn2497.conf", "logs/" + counter + "-attackFlows-", counter);
+			}
+			simDriver.runExperiment("fullTable.txt", "logs/nolimit-attackFlows.csv", 0);
+		}
+		else {
 			System.out.println("mode fucked up, wtf.... " + mode);
 			System.exit(-2);
 		}
