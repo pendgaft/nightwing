@@ -84,7 +84,7 @@ public class Nightwing {
 			for(int counter = 80000; counter <= 160000; counter += 20000){
 				simDriver.runExperiment("asn2497.conf", "logs/" + counter + "-attackFlows-", counter);
 			}
-			simDriver.runExperiment("fullTable.txt", "logs/nolimit-attackFlows.csv", 0);
+			simDriver.runExperiment("asn2497.conf", "logs/nolimit-attackFlows-", 0);
 		}
 		else {
 			System.out.println("mode fucked up, wtf.... " + mode);
