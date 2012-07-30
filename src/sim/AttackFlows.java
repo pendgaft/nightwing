@@ -99,16 +99,16 @@ public class AttackFlows {
 		List<Double> typeCastList = new ArrayList<Double>();
 		for(int tVal: vals){
 			typeCastList.add((double)tVal);
-			Stats.printCDF(typeCastList, name);
 		}
+		Stats.printCDF(typeCastList, name);
 	}
 	
 	private void dumpLong(List<Long> vals, String name) throws IOException{
 		List<Double> typeCastList = new ArrayList<Double>();
 		for(long tVal: vals){
 			typeCastList.add((double)tVal);
-			Stats.printCDF(typeCastList, name);
 		}
+		Stats.printCDF(typeCastList, name);
 	}
 	
 	private int topKThresh(int k){
