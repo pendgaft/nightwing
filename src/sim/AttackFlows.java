@@ -17,15 +17,21 @@ public class AttackFlows {
 	private HashMap<Integer, DecoyAS> pruenedTopo;
 	private HashMap<Integer, HashSet<Integer>> coneMatrix;
 	private HashMap<Integer, Long> cidrs;
-	private HashMap<Integer, Long> coneCIDRs;
 	
 	public static void main(String[] args) throws IOException{
 		HashMap<Integer, DecoyAS> usefulASMap = ASTopoParser.doNetworkBuild("china-as.txt");
 		HashMap<Integer, DecoyAS> prunedASMap = ASTopoParser.doNetworkPrune(usefulASMap);
+		
+//		BufferedWriter outBuff = new BufferedWriter(new FileWriter("routableAS.txt"));
+//		for(int tASN: usefulASMap.keySet()){
+//			outBuff.write("" + tASN + "\n");
+//		}
+//		outBuff.close();
+		
 		AttackFlows tObj = new AttackFlows(usefulASMap, prunedASMap);
-		tObj.parseRIBFile("asn2497.conf");
+		tObj.parseDirectFile("ipDerSizes.csv");
 		List<Double> dumpList = new ArrayList<Double>();
-		for(long tInt: tObj.coneCIDRs.values()){
+		for(long tInt: tObj.cidrs.values()){
 			dumpList.add((double)tInt);
 		}
 		Stats.printCDF(dumpList, "cidr.csv");
@@ -37,7 +43,7 @@ public class AttackFlows {
 	}
 	
 	public void runExperiment(String ribFileName, String outputFileName, int prfxCap) throws IOException{
-		this.parseRIBFile(ribFileName);
+		this.parseDirectFile(ribFileName);
 		
 		List<Long> t1Routes = new ArrayList<Long>();
 		List<Long> t2Routes = new ArrayList<Long>();
@@ -56,7 +62,7 @@ public class AttackFlows {
 			if(tAS.getDegree() >= top100Size){
 				secondRoutes = t1Routes;
 				secondFlows = t1Flows;
-			} else if(tAS.getCustomerCount() > 0){
+			} else if(this.isT2(tAS.getASN())){
 				secondRoutes = t2Routes;
 				secondFlows = t2Flows;
 			}
@@ -93,6 +99,17 @@ public class AttackFlows {
 		this.dumpInt(t1Flows, outputFileName + "t1flows.csv");
 		this.dumpInt(t2Flows, outputFileName + "t2flows.csv");
 		this.dumpInt(allFlows, outputFileName + "allflows.csv");
+	}
+	
+	private boolean isT2(int asn){
+		AS myObj = this.liveTopo.get(asn);
+		for(AS tCust: myObj.getCustomers()){
+			if(tCust.getCustomerCount() > 0){
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	private void dumpInt(List<Integer> vals, String name) throws IOException{
@@ -183,6 +200,30 @@ public class AttackFlows {
 		}
 	}
 	
+	private void parseDirectFile(String file) throws IOException{
+		System.out.println("starting building of customer cone");
+		this.buildConeMatrix();
+		System.out.println("done building cone matrix");
+		
+		BufferedReader fBuff = new BufferedReader(new FileReader(file));
+		this.cidrs = new HashMap<Integer, Long>();
+		
+		while(fBuff.ready()){
+			String pollStr = fBuff.readLine().trim();
+			if(pollStr.length() == 0){
+				continue;
+			}
+			
+			StringTokenizer strTok = new StringTokenizer(pollStr, ",");
+			int asn = Integer.parseInt(strTok.nextToken());
+			long pfx = Long.parseLong(strTok.nextToken());
+			
+			this.cidrs.put(asn, pfx);
+		}
+		
+		fBuff.close();
+	}
+	
 	private void parseRIBFile(String file) throws IOException{
 		System.out.println("starting building of customer cone");
 		this.buildConeMatrix();
@@ -225,37 +266,5 @@ public class AttackFlows {
 			}
 		}
 		fBuff.close();
-		
-		this.coneCIDRs = new HashMap<Integer, Long>();
-		int emptyCount = 0;
-		int done = 0;
-		int stepSize = this.liveTopo.keySet().size() / 10;
-		int currentStep = stepSize;
-		int percentHack = 10;
-		for(int tASN: this.liveTopo.keySet()){
-			if(!this.cidrs.containsKey(tASN)){
-				emptyCount++;
-				this.cidrs.put(tASN, (long)0);
-			}
-			
-			this.coneCIDRs.put(tASN, this.cidrs.get(tASN));
-			for(int tOtherASN: this.cidrs.keySet()){
-				if(tOtherASN == tASN){
-					continue;
-				}
-				if(this.inCC(tASN, tOtherASN)){
-					this.coneCIDRs.put(tASN, this.coneCIDRs.get(tASN) + this.cidrs.get(tOtherASN));
-				}
-			}
-			
-			done++;
-			if(done >= currentStep){
-				System.out.println("" + percentHack + " %");
-				percentHack += 10;
-				currentStep += stepSize;
-			}
-		}
-		
-		System.out.println("transit ASes w/o their own cidrs: " + emptyCount);
 	}
 }

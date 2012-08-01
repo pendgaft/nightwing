@@ -81,10 +81,11 @@ public class Nightwing {
 			simDriver.runTests(country);
 		} else if(mode == Nightwing.ATTACK_FLOW_MODE){
 			AttackFlows simDriver = new AttackFlows(liveTopo, prunedTopo);
-			for(int counter = 80000; counter <= 160000; counter += 20000){
-				simDriver.runExperiment("asn2497.conf", "logs/" + counter + "-attackFlows-", counter);
-			}
-			simDriver.runExperiment("asn2497.conf", "logs/nolimit-attackFlows-", 0);
+//			for(int counter = 80000; counter <= 160000; counter += 20000){
+//				simDriver.runExperiment("asn2497.conf", "logs/" + counter + "-attackFlows-", counter);
+//			}
+//			simDriver.runExperiment("asn2497.conf", "logs/nolimit-attackFlows-", 0);
+			simDriver.runExperiment("pfxSizes.csv", "logs/80000-attackFlows-", 80000);
 		}
 		else {
 			System.out.println("mode fucked up, wtf.... " + mode);
